@@ -33,7 +33,9 @@ async function clickAt(page, x, z) {
   await page.mouse.click(sx, sy)
 }
 
-const tool = (page, name) => page.locator('.fp-tools label', { hasText: new RegExp(`^${name}$`) }).click()
+/** A tool in the editor's toolbar, by its label. */
+const tool = (page, name) =>
+  page.getByRole('radiogroup', { name: 'Tool' }).getByRole('radio', { name, exact: true }).click()
 
 test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) => {
   const errors = watchErrors(page)
@@ -47,18 +49,44 @@ test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) =>
   })
   const space = new URL(page.url()).searchParams.get('space')
 
-  await test.step('draw two rooms with a door and a window', async () => {
+  await test.step('scale a reference image from a known length', async () => {
     await page.getByRole('link', { name: /Draw a floor plan/ }).click()
     await page.waitForURL(/edit=floorplan/)
-    await page.getByLabel('Name', { exact: true }).fill('Two rooms')
+    await page.locator('.fp-panel .text-input').first().fill('Two rooms')
+    // A plan drawn at 100 px a meter; its dimension line runs 6 m from pixel 100 to 700, at y 55.
+    await page
+      .locator('input[aria-label="Reference image file"]')
+      .setInputFiles('tests/e2e/fixtures/reference-plan.png')
+    await page.locator('.fp-reference').waitFor()
+    const s0 = 10 / 900 // shown 10 m wide until scaled
+    await clickAt(page, 100 * s0, 55 * s0)
+    await clickAt(page, 700 * s0, 55 * s0)
+    await page.locator('.fp-calibrate input').fill('6')
+    await page.locator('.fp-calibrate input').blur()
+    await page.getByRole('button', { name: 'Set scale' }).first().click()
+    await expect(page.locator('.fp-panel')).toContainText('1 m on the drawing is 100 px of the image')
+  })
+
+  await test.step('draw an L-shaped room corner by corner, a rectangle by dragging, a door and a window', async () => {
     await tool(page, 'Room')
-    await drawRoom(page, [0, 0], [4, 3])
-    await drawRoom(page, [4.05, 0], [6, 3]) // snaps onto the first room's edge
+    for (const [x, z] of [
+      [0, 0],
+      [6, 0],
+      [6, 3],
+      [3.5, 3],
+      [3.5, 5],
+      [0, 5],
+      [0, 0],
+    ])
+      await clickAt(page, x, z)
+    await expect(page.locator('.fp-panel')).toContainText('25.0 m² · 6 corners')
+    await drawRoom(page, [3.55, 3], [6, 5.05]) // snaps onto the L's edges
+    await page.locator('.fp-panel').getByRole('radio', { name: 'Bedroom', exact: true }).click()
     await expect(page.locator('.fp-problems')).toContainText('There is no door yet')
     await tool(page, 'Door')
-    await clickAt(page, 0, 1.5)
+    await clickAt(page, 0, 2.5)
     await tool(page, 'Window')
-    await clickAt(page, 6, 1.5)
+    await clickAt(page, 3, 0)
     await expect(page.locator('.fp-problems')).toHaveCount(0)
   })
 
@@ -69,10 +97,14 @@ test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) =>
       timeout: 60000,
     })
     await expect(page.locator('.toolbar .title h1')).toContainText('Two rooms')
-    // One partition between the rooms, which a layout can take out.
-    const walls = await page.evaluate(async () => (await import('/src/project/plan.ts')).plan.shell.walls)
-    expect(walls.filter((w) => w.kind === 'interior')).toHaveLength(1)
-    expect(walls.flatMap((w) => (w.openings ?? []).map((o) => o.kind)).sort()).toEqual(['door', 'window'])
+    const plan = await page.evaluate(async () => (await import('/src/project/plan.ts')).plan)
+    // Two partitions where the bedroom meets the L; with the notch filled, the outline is a rectangle.
+    expect(plan.shell.walls.filter((w) => w.kind === 'interior')).toHaveLength(2)
+    expect(plan.shell.walls.filter((w) => w.kind === 'exterior')).toHaveLength(4)
+    expect(plan.shell.walls.flatMap((w) => (w.openings ?? []).map((o) => o.kind)).sort()).toEqual(['door', 'window'])
+    // The L is two floor pieces in 3D; the reference image stays with the drawing.
+    expect(plan.shell.rooms).toHaveLength(3)
+    expect(plan.sketch.reference.scale).toBeCloseTo(0.01)
   })
 
   await test.step('the plan title leads back to the space, where an example can be copied', async () => {
@@ -95,8 +127,9 @@ test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) =>
 
   await test.step('a drawn plan opens in the editor again', async () => {
     await page.goto(`${BASE_URL}/?space=${space}&plan=two-rooms&edit=floorplan`)
-    await expect(page.getByRole('heading', { name: 'Edit floor plan' })).toBeVisible()
+    await expect(page.locator('.toolbar .title')).toContainText('Editing the floor plan')
     await expect(page.locator('.fp-room')).toHaveCount(2)
+    await expect(page.locator('.fp-reference')).toBeVisible()
   })
 
   expect(errors).toEqual([])

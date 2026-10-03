@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { Plan } from '../../model/plan'
+import { area, boundsOf, edgesOf, rectangles } from '../../model/polygon'
 import {
   FITTINGS,
   ROOM_KINDS,
@@ -10,9 +11,12 @@ import {
 } from '../../model/sketch'
 import type { Rect, Vec2 } from '../../model/types'
 import {
+  closeOutline,
   edgeLines,
   extent,
   freshId,
+  moveCorner,
+  moveEdge,
   OPENING_WIDTH,
   openingSpot,
   overlapping,
@@ -20,15 +24,17 @@ import {
   round,
   roomAt,
   snap,
+  snapPoint,
+  squareTo,
   toGrid,
   type Selection,
   type Tool,
 } from './editing'
 
 // The drawing surface of the floor plan editor: an SVG in plan meters (x right,
-// z down, like the 3D app's top view). Rooms are drawn and edited here; the walls
-// shown are the ones planFromSketch() builds from them, so what you see is what
-// the 3D plan gets.
+// z down, like the 3D app's top view), over an optional reference image. Rooms
+// are drawn and reshaped here; the walls shown are the ones planFromSketch()
+// builds from them, so what you see is what the 3D plan gets.
 
 const KIND_FILL: Record<SketchRoom['kind'], string> = {
   living: '#efe6d6',
@@ -39,12 +45,21 @@ const KIND_FILL: Record<SketchRoom['kind'], string> = {
   balcony: '#e9ebe6',
 }
 
+const OPENING_COLOR: Record<OpeningKind, string> = {
+  door: '#b07a3f',
+  window: '#3b82c4',
+  glassDoor: '#5aa7d6',
+  passage: '#8a857c',
+}
+
 type Drag =
-  | { type: 'draw'; from: Vec2; to: Vec2 }
+  | { type: 'draw'; from: Vec2; to: Vec2; moved: boolean }
   | { type: 'move'; id: string; grab: Vec2; start: Sketch }
-  | { type: 'resize'; id: string; corner: [0 | 2, 1 | 3] }
+  | { type: 'corner'; id: string; i: number; start: Vec2[] }
+  | { type: 'edge'; id: string; i: number; start: Vec2[] }
   | { type: 'fitting'; id: string; grab: Vec2 }
   | { type: 'opening'; id: string }
+  | { type: 'reference'; grab: Vec2; origin: Vec2 }
   | { type: 'pan'; client: Vec2; view: Rect }
 
 interface Props {
@@ -57,14 +72,43 @@ interface Props {
   /** A change; `commit` is false while a drag is still going (one undo step per gesture). */
   onChange: (sketch: Sketch, commit: boolean) => void
   onSelect: (s: Selection) => void
+  /** Corners clicked so far while drawing a room (for the hint). */
+  onDrawing: (corners: number) => void
+  /** The two ends of a known length, measured on the reference image. */
+  onMeasured: (a: Vec2, b: Vec2) => void
+  /** Bumped to frame the drawing again. */
+  fitNonce: number
 }
 
-export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection, onChange, onSelect }: Props) {
+export function FloorplanCanvas(props: Props) {
+  const { sketch, preview, tool, fittingType, selection, onChange, onSelect, onDrawing, onMeasured, fitNonce } = props
   const svg = useRef<SVGSVGElement>(null)
   const [view, setView] = useState<Rect>(() => framed(sketch))
   const [drag, setDrag] = useState<Drag | null>(null)
   const [hover, setHover] = useState<Vec2 | null>(null)
+  /** Corners of the room being drawn, click by click. */
+  const [outline, setOutline] = useState<Vec2[]>([])
+  /** The first end of a length being measured on the reference image. */
+  const [measureFrom, setMeasureFrom] = useState<Vec2 | null>(null)
   const bad = new Set(overlapping(sketch.rooms))
+
+  // Fit on request (the toolbar's Fit button).
+  const sketchRef = useRef(sketch)
+  useEffect(() => {
+    sketchRef.current = sketch
+  })
+  useEffect(() => {
+    if (fitNonce) setView(framed(sketchRef.current))
+  }, [fitNonce])
+
+  // Changing tools drops what was half done.
+  const [lastTool, setLastTool] = useState(tool)
+  if (tool !== lastTool) {
+    setLastTool(tool)
+    setOutline([])
+    setMeasureFrom(null)
+  }
+  useEffect(() => onDrawing(outline.length), [outline.length, onDrawing])
 
   /** Plan meters under a pointer event. */
   const at = (e: { clientX: number; clientY: number }): Vec2 => {
@@ -78,30 +122,81 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
     const el = svg.current!
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      const [px, pz] = at(e)
+      const m = el.getScreenCTM()!.inverse()
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m)
       const k = Math.exp(e.deltaY * 0.0015)
       setView(([x, z, w, h]) => {
-        const nw = Math.min(60, Math.max(2, w * k))
+        const nw = Math.min(80, Math.max(2, w * k))
         const nh = (nw / w) * h
-        return [px - ((px - x) * nw) / w, pz - ((pz - z) * nh) / h, nw, nh]
+        return [p.x - ((p.x - x) * nw) / w, p.y - ((p.y - z) * nh) / h, nw, nh]
       })
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
 
+  const addRoom = (points: Vec2[]) => {
+    const id = freshId('room')
+    const kind = sketch.rooms.length === 0 ? 'living' : 'bedroom'
+    onChange({ ...sketch, rooms: [...sketch.rooms, { id, name: '', kind, points }] }, true)
+    onSelect({ kind: 'room', id })
+  }
+
+  const finishOutline = (corners = outline) => {
+    const points = closeOutline(corners)
+    setOutline([])
+    if (points) addRoom(points)
+  }
+
+  // Keys while drawing a room: Enter closes it, Backspace takes the last corner back, Esc drops it.
+  useEffect(() => {
+    if (!outline.length) return
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest?.('input, select, textarea')) return
+      if (e.key === 'Enter') finishOutline()
+      else if (e.key === 'Backspace') setOutline((o) => o.slice(0, -1))
+      else if (e.key === 'Escape') setOutline([])
+      else return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  })
+
   const update = (patch: Partial<Sketch>, commit: boolean) => onChange({ ...sketch, ...patch }, commit)
-  const setRoom = (id: string, rect: Rect, base = sketch) =>
-    ({ ...base, rooms: base.rooms.map((r) => (r.id === id ? { ...r, rect } : r)) }) satisfies Sketch
+  const setPoints = (id: string, points: Vec2[], base = sketch): Sketch => ({
+    ...base,
+    rooms: base.rooms.map((r) => (r.id === id ? { ...r, points } : r)),
+  })
+
+  /** Where the next corner goes while drawing: squared to the last one, snapped to other rooms. */
+  const nextCorner = (p: Vec2): Vec2 => {
+    const s = snapPoint(p, edgeLines(sketch.rooms))
+    if (!outline.length) return s
+    const sq = squareTo(outline[outline.length - 1], s)
+    // Near the first corner's lines? Line up with them, so the outline closes square.
+    const first = outline[0]
+    return [Math.abs(sq[0] - first[0]) < 0.15 ? first[0] : sq[0], Math.abs(sq[1] - first[1]) < 0.15 ? first[1] : sq[1]]
+  }
 
   const onDown = (e: ReactPointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return
     const p = at(e)
     svg.current!.setPointerCapture(e.pointerId)
-    const lines = edgeLines(sketch.rooms)
     if (tool === 'room') {
-      const start: Vec2 = [snap(p[0], lines.x), snap(p[1], lines.z)]
-      return setDrag({ type: 'draw', from: start, to: start })
+      const start = nextCorner(p)
+      return setDrag({ type: 'draw', from: start, to: start, moved: false })
+    }
+    if (tool === 'calibrate') {
+      if (!measureFrom) return setMeasureFrom(p)
+      onMeasured(measureFrom, p)
+      return setMeasureFrom(null)
+    }
+    if (tool === 'reference') {
+      if (sketch.reference) setDrag({ type: 'reference', grab: p, origin: sketch.reference.origin })
+      else setDrag({ type: 'pan', client: [e.clientX, e.clientY], view })
+      return
     }
     if (tool === 'fitting') {
       const id = freshId('fit')
@@ -133,7 +228,7 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
     if (!drag) return
     if (drag.type === 'pan') {
       const r = svg.current!.getBoundingClientRect()
-      const k = drag.view[2] / r.width
+      const k = Math.max(drag.view[2] / r.width, drag.view[3] / r.height)
       setView([
         drag.view[0] - (e.clientX - drag.client[0]) * k,
         drag.view[1] - (e.clientY - drag.client[1]) * k,
@@ -143,30 +238,45 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
       return
     }
     if (drag.type === 'draw') {
-      const lines = edgeLines(sketch.rooms)
-      return setDrag({ ...drag, to: [snap(p[0], lines.x), snap(p[1], lines.z)] })
+      // Dragging (rather than clicking) draws a rectangle in one go.
+      const to = snapPoint(p, edgeLines(sketch.rooms))
+      const moved = drag.moved || Math.hypot(to[0] - drag.from[0], to[1] - drag.from[1]) >= 0.3
+      return setDrag({ ...drag, to, moved: moved && outline.length === 0 })
+    }
+    if (drag.type === 'reference' && sketch.reference) {
+      const origin: Vec2 = [round(drag.origin[0] + p[0] - drag.grab[0]), round(drag.origin[1] + p[1] - drag.grab[1])]
+      return update({ reference: { ...sketch.reference, origin } }, false)
     }
     if (drag.type === 'move') {
       const room = drag.start.rooms.find((r) => r.id === drag.id)!
       const lines = edgeLines(drag.start.rooms, drag.id)
-      const [x0, z0, x1, z1] = room.rect
-      // Snap whichever edge lands nearest another room's edge, else the grid.
-      const dx = bestShift([x0, x1], p[0] - drag.grab[0], lines.x)
-      const dz = bestShift([z0, z1], p[1] - drag.grab[1], lines.z)
+      // Snap whichever corner lands nearest another room's corner line, else the grid.
+      const dx = bestShift(
+        room.points.map((q) => q[0]),
+        p[0] - drag.grab[0],
+        lines.x,
+      )
+      const dz = bestShift(
+        room.points.map((q) => q[1]),
+        p[1] - drag.grab[1],
+        lines.z,
+      )
       return onChange(moveRoom(drag.start, drag.id, dx, dz), false)
     }
-    if (drag.type === 'resize') {
-      const room = sketch.rooms.find((r) => r.id === drag.id)!
+    if (drag.type === 'corner') {
+      const to = snapPoint(p, edgeLines(sketch.rooms, drag.id))
+      return onChange(setPoints(drag.id, moveCorner(drag.start, drag.i, to)), false)
+    }
+    if (drag.type === 'edge') {
+      const [a, b] = [drag.start[drag.i], drag.start[(drag.i + 1) % drag.start.length]]
       const lines = edgeLines(sketch.rooms, drag.id)
-      const r = [...room.rect] as Rect
-      r[drag.corner[0]] = snap(p[0], lines.x)
-      r[drag.corner[1]] = snap(p[1], lines.z)
-      const fixed: Vec2 = [room.rect[2 - drag.corner[0]], room.rect[4 - drag.corner[1]]]
-      return onChange(setRoom(drag.id, rectFrom(fixed, [r[drag.corner[0]], r[drag.corner[1]]])), false)
+      const alongX = Math.abs(a[1] - b[1]) < 1e-6
+      const line = alongX ? snap(p[1], lines.z) : snap(p[0], lines.x)
+      return onChange(setPoints(drag.id, moveEdge(drag.start, drag.i, line)), false)
     }
     if (drag.type === 'fitting') {
-      const at: Vec2 = [toGrid(p[0] - drag.grab[0]), toGrid(p[1] - drag.grab[1])]
-      return update({ fittings: sketch.fittings.map((f) => (f.id === drag.id ? { ...f, at } : f)) }, false)
+      const to: Vec2 = [toGrid(p[0] - drag.grab[0]), toGrid(p[1] - drag.grab[1])]
+      return update({ fittings: sketch.fittings.map((f) => (f.id === drag.id ? { ...f, at: to } : f)) }, false)
     }
     if (drag.type === 'opening') {
       const o = sketch.openings.find((x) => x.id === drag.id)!
@@ -177,13 +287,14 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
 
   const onUp = () => {
     if (drag?.type === 'draw') {
-      const rect = rectFrom(drag.from, drag.to)
-      // A click without a drag draws nothing.
-      if (Math.abs(drag.to[0] - drag.from[0]) >= 0.3 || Math.abs(drag.to[1] - drag.from[1]) >= 0.3) {
-        const id = freshId('room')
-        const kind = sketch.rooms.length === 0 ? 'living' : 'bedroom'
-        update({ rooms: [...sketch.rooms, { id, name: '', kind, rect }] }, true)
-        onSelect({ kind: 'room', id })
+      if (drag.moved) addRoom(rectFrom(drag.from, drag.to))
+      else {
+        // A click: the next corner of the room being drawn; on the first corner, close it.
+        const first = outline[0]
+        const last = outline[outline.length - 1]
+        if (first && outline.length >= 3 && Math.hypot(drag.from[0] - first[0], drag.from[1] - first[1]) < 0.2)
+          finishOutline()
+        else if (!last || drag.from[0] !== last[0] || drag.from[1] !== last[1]) setOutline([...outline, drag.from])
       }
     } else if (drag && drag.type !== 'pan') onChange(sketch, true)
     setDrag(null)
@@ -197,17 +308,20 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
     setDrag(d)
   }
 
-  const px = view[2] / 800 // about one screen pixel, in meters
-  const draft = drag?.type === 'draw' ? rectFrom(drag.from, drag.to) : null
+  const px = view[2] / 900 // about one screen pixel, in meters
+  const ref = sketch.reference
   const ghost =
-    tool !== 'select' && tool !== 'room' && tool !== 'fitting' && hover
-      ? openingSpot(sketch.rooms, hover, OPENING_WIDTH[tool])
+    hover && (tool === 'door' || tool === 'window' || tool === 'glassDoor' || tool === 'passage')
+      ? { at: openingSpot(sketch.rooms, hover, OPENING_WIDTH[tool]), color: OPENING_COLOR[tool] }
       : null
+  const nextAt = tool === 'room' && hover && outline.length ? nextCorner(hover) : null
+  const draftRect = drag?.type === 'draw' && drag.moved ? rectFrom(drag.from, drag.to) : null
   const openingsById = new Map(
     (preview?.shell.walls ?? []).flatMap((w) =>
       (w.openings ?? []).map((o) => [o.id, { wall: w, opening: o }] as const),
     ),
   )
+  const selectedRoom = selection?.kind === 'room' ? sketch.rooms.find((r) => r.id === selection.id) : undefined
 
   return (
     <div className="fp-canvas">
@@ -219,53 +333,59 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerLeave={() => setHover(null)}
+        onDoubleClick={() => tool === 'room' && outline.length >= 3 && finishOutline()}
         data-tool={tool}
         role="application"
         aria-label="Floor plan drawing"
       >
         <defs>
           <pattern id="fp-grid" width="0.5" height="0.5" patternUnits="userSpaceOnUse">
-            <path d="M 0.5 0 L 0 0 0 0.5" fill="none" stroke="rgb(43 41 37 / 0.08)" strokeWidth={px} />
+            <path d="M 0.5 0 L 0 0 0 0.5" fill="none" stroke="rgb(43 41 37 / 0.07)" strokeWidth={px} />
           </pattern>
           <pattern id="fp-grid-m" width="1" height="1" patternUnits="userSpaceOnUse">
-            <path d="M 1 0 L 0 0 0 1" fill="none" stroke="rgb(43 41 37 / 0.16)" strokeWidth={px} />
+            <path d="M 1 0 L 0 0 0 1" fill="none" stroke="rgb(43 41 37 / 0.14)" strokeWidth={px} />
           </pattern>
         </defs>
-        <rect x={view[0] - 50} y={view[1] - 50} width={view[2] + 100} height={view[3] + 100} fill="url(#fp-grid)" />
-        <rect x={view[0] - 50} y={view[1] - 50} width={view[2] + 100} height={view[3] + 100} fill="url(#fp-grid-m)" />
+        <rect x={view[0] - 80} y={view[1] - 80} width={view[2] + 160} height={view[3] + 160} fill="url(#fp-grid)" />
+        <rect x={view[0] - 80} y={view[1] - 80} width={view[2] + 160} height={view[3] + 160} fill="url(#fp-grid-m)" />
+
+        {ref && !ref.hidden && (
+          <image
+            className="fp-reference"
+            href={ref.url}
+            x={ref.origin[0]}
+            y={ref.origin[1]}
+            width={ref.width * ref.scale}
+            height={ref.height * ref.scale}
+            opacity={ref.opacity}
+            preserveAspectRatio="none"
+            pointerEvents="none"
+          />
+        )}
 
         {sketch.rooms.map((r) => {
-          const [x0, z0, x1, z1] = r.rect
-          const selected = selection?.kind === 'room' && selection.id === r.id
+          const selected = selectedRoom?.id === r.id
+          // Labels sit in the room's largest rectangle: in an L, not in the notch.
+          const [x0, z0, x1, z1] = rectangles(r.points)[0] ?? boundsOf(r.points)
+          const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2]
+          const [bx0, bz0, bx1, bz1] = boundsOf(r.points)
           return (
             <g key={r.id} className="fp-room">
-              <rect
-                x={x0}
-                y={z0}
-                width={x1 - x0}
-                height={z1 - z0}
+              <polygon
+                points={r.points.map((q) => q.join(',')).join(' ')}
                 fill={bad.has(r.id) ? '#f6d4cf' : KIND_FILL[r.kind]}
+                fillOpacity={ref && !ref.hidden ? 0.6 : 1}
                 stroke={selected ? 'var(--focus)' : 'rgb(43 41 37 / 0.3)'}
                 strokeWidth={(selected ? 2 : 1) * px}
                 strokeDasharray={selected ? undefined : `${4 * px} ${3 * px}`}
               />
-              <text
-                x={(x0 + x1) / 2}
-                y={(z0 + z1) / 2 - 8 * px}
-                fontSize={13 * px}
-                textAnchor="middle"
-                className="fp-label"
-              >
+              <text x={cx} y={cz - 7 * px} fontSize={12 * px} textAnchor="middle" className="fp-label">
                 {r.name || ROOM_KINDS.find((k) => k.id === r.kind)!.label}
               </text>
-              <text
-                x={(x0 + x1) / 2}
-                y={(z0 + z1) / 2 + 10 * px}
-                fontSize={11 * px}
-                textAnchor="middle"
-                className="fp-dims"
-              >
-                {(x1 - x0).toFixed(2)} × {(z1 - z0).toFixed(2)} m
+              <text x={cx} y={cz + 9 * px} fontSize={10.5 * px} textAnchor="middle" className="fp-dims">
+                {r.points.length === 4
+                  ? `${(bx1 - bx0).toFixed(2)} × ${(bz1 - bz0).toFixed(2)} m`
+                  : `${area(r.points).toFixed(1)} m²`}
               </text>
             </g>
           )
@@ -340,13 +460,14 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
               key={f.id}
               className="fp-fitting"
               transform={`translate(${f.at[0]} ${f.at[1]}) rotate(${-f.rotation})`}
-              onPointerDown={(e) =>
+              onPointerDown={(e) => {
+                const p = at(e)
                 startDrag(
                   e,
-                  { type: 'fitting', id: f.id, grab: [at(e)[0] - f.at[0], at(e)[1] - f.at[1]] },
+                  { type: 'fitting', id: f.id, grab: [p[0] - f.at[0], p[1] - f.at[1]] },
                   { kind: 'fitting', id: f.id },
                 )
-              }
+              }}
             >
               <rect
                 x={-w / 2}
@@ -358,8 +479,8 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
                 strokeWidth={(selected ? 2 : 1) * px}
               />
               <text
-                y={4 * px}
-                fontSize={10 * px}
+                y={3.5 * px}
+                fontSize={9.5 * px}
                 textAnchor="middle"
                 className="fp-dims"
                 transform={`rotate(${f.rotation})`}
@@ -370,67 +491,119 @@ export function FloorplanCanvas({ sketch, preview, tool, fittingType, selection,
           )
         })}
 
-        {selection?.kind === 'room' &&
-          tool === 'select' &&
-          (() => {
-            const r = sketch.rooms.find((x) => x.id === selection.id)
-            if (!r) return null
-            return ([0, 2] as const).flatMap((cx) =>
-              ([1, 3] as const).map((cz) => (
-                <rect
-                  key={`${cx}${cz}`}
-                  className="fp-handle"
-                  x={r.rect[cx] - 5 * px}
-                  y={r.rect[cz] - 5 * px}
-                  width={10 * px}
-                  height={10 * px}
-                  onPointerDown={(e) => startDrag(e, { type: 'resize', id: r.id, corner: [cx, cz] }, selection)}
-                />
-              )),
-            )
-          })()}
+        {selectedRoom && tool === 'select' && (
+          <g className="fp-handles">
+            {edgesOf(selectedRoom.points).map(([a, b], i) => (
+              <circle
+                key={`e${i}`}
+                className="fp-edge-handle"
+                data-axis={Math.abs(a[1] - b[1]) < 1e-6 ? 'z' : 'x'}
+                cx={(a[0] + b[0]) / 2}
+                cy={(a[1] + b[1]) / 2}
+                r={5 * px}
+                strokeWidth={1.5 * px}
+                onPointerDown={(e) =>
+                  startDrag(e, { type: 'edge', id: selectedRoom.id, i, start: selectedRoom.points }, selection)
+                }
+              />
+            ))}
+            {selectedRoom.points.map((q, i) => (
+              <rect
+                key={`c${i}`}
+                className="fp-corner-handle"
+                x={q[0] - 5 * px}
+                y={q[1] - 5 * px}
+                width={10 * px}
+                height={10 * px}
+                strokeWidth={1.5 * px}
+                onPointerDown={(e) =>
+                  startDrag(e, { type: 'corner', id: selectedRoom.id, i, start: selectedRoom.points }, selection)
+                }
+              />
+            ))}
+          </g>
+        )}
 
-        {draft && (
-          <rect
-            x={draft[0]}
-            y={draft[1]}
-            width={draft[2] - draft[0]}
-            height={draft[3] - draft[1]}
-            fill="rgb(47 111 214 / 0.12)"
-            stroke="var(--focus)"
-            strokeWidth={2 * px}
-          />
+        {/* The room being drawn: corners so far, the next edge, and how it would close. */}
+        {outline.length > 0 && (
+          <g pointerEvents="none">
+            <polyline
+              points={[...outline, ...(nextAt ? [nextAt] : [])].map((q) => q.join(',')).join(' ')}
+              fill="rgb(47 111 214 / 0.08)"
+              stroke="var(--focus)"
+              strokeWidth={2 * px}
+            />
+            {nextAt && outline.length >= 2 && (
+              <line
+                x1={nextAt[0]}
+                y1={nextAt[1]}
+                x2={outline[0][0]}
+                y2={outline[0][1]}
+                stroke="var(--focus)"
+                strokeWidth={px}
+                strokeDasharray={`${4 * px} ${3 * px}`}
+              />
+            )}
+            {outline.map((q, i) => (
+              <circle
+                key={i}
+                cx={q[0]}
+                cy={q[1]}
+                r={(i === 0 ? 6 : 4) * px}
+                fill={i === 0 ? 'var(--surface)' : 'var(--focus)'}
+                stroke="var(--focus)"
+                strokeWidth={1.5 * px}
+              />
+            ))}
+            {nextAt && (
+              <text x={nextAt[0] + 8 * px} y={nextAt[1] - 8 * px} fontSize={11 * px} className="fp-dims">
+                {Math.hypot(
+                  nextAt[0] - outline[outline.length - 1][0],
+                  nextAt[1] - outline[outline.length - 1][1],
+                ).toFixed(2)}{' '}
+                m
+              </text>
+            )}
+          </g>
         )}
-        {draft && (
-          <text x={draft[2]} y={draft[3] + 16 * px} fontSize={12 * px} textAnchor="end" className="fp-dims">
-            {(draft[2] - draft[0]).toFixed(2)} × {(draft[3] - draft[1]).toFixed(2)} m
-          </text>
+        {draftRect && (
+          <g pointerEvents="none">
+            <polygon
+              points={draftRect.map((q) => q.join(',')).join(' ')}
+              fill="rgb(47 111 214 / 0.12)"
+              stroke="var(--focus)"
+              strokeWidth={2 * px}
+            />
+            <text
+              x={draftRect[2][0]}
+              y={draftRect[2][1] + 16 * px}
+              fontSize={12 * px}
+              textAnchor="end"
+              className="fp-dims"
+            >
+              {(draftRect[1][0] - draftRect[0][0]).toFixed(2)} × {(draftRect[2][1] - draftRect[1][1]).toFixed(2)} m
+            </text>
+          </g>
         )}
-        {ghost && tool !== 'select' && tool !== 'room' && tool !== 'fitting' && (
-          <circle
-            cx={ghost[0]}
-            cy={ghost[1]}
-            r={6 * px}
-            fill={OPENING_COLOR[tool]}
-            opacity={0.7}
-            pointerEvents="none"
-          />
+        {tool === 'calibrate' && measureFrom && hover && (
+          <g pointerEvents="none">
+            <line
+              x1={measureFrom[0]}
+              y1={measureFrom[1]}
+              x2={hover[0]}
+              y2={hover[1]}
+              stroke="#d23f31"
+              strokeWidth={2 * px}
+            />
+            <circle cx={measureFrom[0]} cy={measureFrom[1]} r={4 * px} fill="#d23f31" />
+          </g>
+        )}
+        {ghost?.at && (
+          <circle cx={ghost.at[0]} cy={ghost.at[1]} r={6 * px} fill={ghost.color} opacity={0.7} pointerEvents="none" />
         )}
       </svg>
-      <div className="fp-zoom">
-        <button type="button" className="btn" onClick={() => setView(framed(sketch))}>
-          Fit
-        </button>
-      </div>
     </div>
   )
-}
-
-const OPENING_COLOR: Record<OpeningKind, string> = {
-  door: '#b07a3f',
-  window: '#3b82c4',
-  glassDoor: '#5aa7d6',
-  passage: '#8a857c',
 }
 
 /** The view rectangle that frames a sketch with some room around it. */
@@ -440,15 +613,15 @@ function framed(sketch: Sketch): Rect {
   return [x0 - m, z0 - m, Math.max(x1 - x0 + 2 * m, 6), Math.max(z1 - z0 + 2 * m, 4)]
 }
 
-/** The shift that lands one of `edges` on a snap line, or the grid shift. */
-function bestShift(edges: number[], d: number, lines: number[]): number {
-  let best = toGrid(edges[0] + d) - edges[0]
+/** The shift that lands one of `coords` on a snap line, or the grid shift. */
+function bestShift(coords: number[], d: number, lines: number[]): number {
+  let best = toGrid(coords[0] + d) - coords[0]
   let gap = Infinity
-  for (const e of edges) {
-    const s = snap(e + d, lines)
-    if (lines.includes(s) && Math.abs(s - (e + d)) < gap) {
-      gap = Math.abs(s - (e + d))
-      best = s - e
+  for (const c of coords) {
+    const s = snap(c + d, lines)
+    if (lines.includes(s) && Math.abs(s - (c + d)) < gap) {
+      gap = Math.abs(s - (c + d))
+      best = s - c
     }
   }
   return round(best)
@@ -457,17 +630,18 @@ function bestShift(edges: number[], d: number, lines: number[]): number {
 /** Moves a room, with the doors and windows on its edges and the fittings inside it. */
 function moveRoom(base: Sketch, id: string, dx: number, dz: number): Sketch {
   const room = base.rooms.find((r) => r.id === id)!
-  const [x0, z0, x1, z1] = room.rect
   const onEdge = (p: Vec2) =>
-    ((Math.abs(p[0] - x0) < 1e-6 || Math.abs(p[0] - x1) < 1e-6) && p[1] >= z0 && p[1] <= z1) ||
-    ((Math.abs(p[1] - z0) < 1e-6 || Math.abs(p[1] - z1) < 1e-6) && p[0] >= x0 && p[0] <= x1)
-  const inside = (p: Vec2) => p[0] > x0 && p[0] < x1 && p[1] > z0 && p[1] < z1
+    edgesOf(room.points).some(([a, b]) => {
+      const alongX = Math.abs(a[1] - b[1]) < 1e-6
+      return alongX
+        ? Math.abs(p[1] - a[1]) < 1e-6 && p[0] >= Math.min(a[0], b[0]) && p[0] <= Math.max(a[0], b[0])
+        : Math.abs(p[0] - a[0]) < 1e-6 && p[1] >= Math.min(a[1], b[1]) && p[1] <= Math.max(a[1], b[1])
+    })
+  const inside = (p: Vec2) => roomAt([room], p) !== undefined
   const shift = (p: Vec2): Vec2 => [round(p[0] + dx), round(p[1] + dz)]
   return {
     ...base,
-    rooms: base.rooms.map((r) =>
-      r.id === id ? { ...r, rect: [x0 + dx, z0 + dz, x1 + dx, z1 + dz].map(round) as Rect } : r,
-    ),
+    rooms: base.rooms.map((r) => (r.id === id ? { ...r, points: r.points.map(shift) } : r)),
     openings: base.openings.map((o) => (onEdge(o.at) ? { ...o, at: shift(o.at) } : o)),
     fittings: base.fittings.map((f) => (inside(f.at) ? { ...f, at: shift(f.at) } : f)),
   }

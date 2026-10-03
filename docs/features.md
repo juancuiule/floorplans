@@ -11,12 +11,17 @@ Everything the app does, as a reference. For setting it up with your own apartme
 
 ## Floor plan editor
 
-- **Room:** drag on the grid (5 cm steps). Rooms are drawn on wall centerlines; an edge near another room's edge snaps onto it, and rooms that share an edge share the wall. Each room has a kind (living, bedroom, kitchen, bathroom, hall, balcony) that picks its floor zone; balconies get railings instead of walls.
+It looks and works like the 3D editor: tools in the toolbar (each with a key), settings in the panel, a hint at the bottom.
+
+- **Reference image** (panel): add a picture of the floor plan (a listing's plan, a scan, a photo taken square on). *Set scale*: click both ends of a length you know on it and type that length; *Move* drags it into place; set its opacity, or hide it. It is kept with the plan, in the space's references (not its artwork).
+- **Room** (`R`): click each corner; every new edge runs straight across or up the plan. Click the first corner, double-click or press `Enter` to close it; `Backspace` takes a corner back, `Esc` drops it. Or drag to draw a rectangle in one go. Corners snap to other rooms' corners so rooms meet exactly and share their wall. Each room has a kind (living, bedroom, kitchen, bathroom, hall, balcony) that picks its floor zone; balconies get railings instead of walls.
 - **Walls** follow the rooms: 20 cm outside, 10 cm between rooms (removable later in the Room tab).
-- **Door · Window · Glass door · Opening:** click a wall; drag it along the wall, set its width in the panel.
-- **Fitting:** toilet, basin, shower, counter, sink or cooktop; click to place, `R` to turn.
-- **Select:** drag a room to move it (its doors, windows and fittings come along), its corners to resize it; drag the empty grid to pan, scroll to zoom, *Fit* to frame. `Delete` removes the selection, `Cmd/Ctrl+Z` undoes.
+- **Door** (`D`) · **Window** (`W`) · **Glass door** (`G`) · **Opening** (`O`): click a wall; drag it along the wall, set its width in the panel.
+- **Fitting** (`F`): toilet, basin, shower, counter, sink or cooktop; click to place, `R` to turn.
+- **Select** (`V`): drag a room to move it (its doors, windows and fittings come along); drag a corner to move it (its neighbors follow, so corners stay square) or an edge's dot to push or pull that wall; drag the grid to pan, scroll to zoom, *Fit* to frame. `Delete` removes the selection, `Cmd/Ctrl+Z` undoes, `Shift+Cmd/Ctrl+Z` redoes.
 - The panel names the plan, picks the city (for the sun) and the ceiling height, and lists problems before saving (overlapping rooms, no front door).
+
+![Tracing a floor plan](images/floorplan-editor.jpg)
 
 ## Views
 

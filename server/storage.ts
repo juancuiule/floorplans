@@ -14,9 +14,13 @@ import { HttpError } from './http.ts'
 //   <root>/spaces/<space>/plans/<plan>.plan.json
 //   <root>/spaces/<space>/layouts/<plan>/decor*.json  decor.json is the plan's main layout
 //   <root>/spaces/<space>/artwork/*
+//   <root>/spaces/<space>/references/*              floor plan images traced in the editor
 //
 // Templates are the example workspaces in examples/ (docs/adr/0009): a new plan
 // can start as a copy of one, without its artwork.
+
+/** The image libraries of a space. */
+export type Library = 'artwork' | 'references'
 
 /** Space and plan ids: lowercase letters, digits and dashes, safe in paths and URLs. */
 const ID = /^[a-z0-9][a-z0-9-]{0,39}$/
@@ -81,11 +85,15 @@ export class SpaceStore {
     return path.join(this.spaceDir(space), 'layouts', plan)
   }
   artworkDir(space: string) {
-    return path.join(this.spaceDir(space), 'artwork')
+    return this.libraryDir(space, 'artwork')
   }
-  /** The URL the app loads an artwork image of this space from. */
-  artworkUrl(space: string, name: string) {
-    return `/api/spaces/${space}/artwork/${encodeURIComponent(name)}`
+  /** A space's image folders: `artwork` (hung on walls) and `references` (floor plans traced in the editor). */
+  libraryDir(space: string, library: Library) {
+    return path.join(this.spaceDir(space), library)
+  }
+  /** The URL the app loads an image of this space from. */
+  artworkUrl(space: string, name: string, library: Library = 'artwork') {
+    return `/api/spaces/${space}/${library}/${encodeURIComponent(name)}`
   }
 
   async requireSpace(space: string) {

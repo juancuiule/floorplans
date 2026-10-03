@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { emptySketch, planFromSketch, type Sketch, type SketchRoom } from '../../src/model/sketch'
+import { rectPoints } from '../../src/model/polygon'
+import { emptySketch, planFromSketch, readSketch, type Sketch, type SketchRoom } from '../../src/model/sketch'
 import type { Wall } from '../../src/model/types'
 import { validatePlan } from '../../src/model/validate'
 
 const meta = { id: 'flat', name: 'Flat', location: { label: 'Madrid', lat: 40.4, lon: -3.7, tz: 1 } }
-const room = (id: string, kind: SketchRoom['kind'], rect: SketchRoom['rect']): SketchRoom => ({
+const room = (id: string, kind: SketchRoom['kind'], rect: [number, number, number, number]): SketchRoom => ({
   id,
   name: '',
   kind,
-  rect,
+  points: rectPoints(rect),
 })
 const sketch = (patch: Partial<Sketch>): Sketch => ({ ...emptySketch(), ...patch })
 const span = (w: Wall) => [w.a, w.b]
@@ -122,5 +123,92 @@ describe('planFromSketch', () => {
     expect(() => planFromSketch(sketch({ rooms: [room('o', 'balcony', [0, 0, 1, 1])] }), meta)).toThrow(
       /at least one room/,
     )
+  })
+
+  it('builds an L-shaped room: six outer walls, two floor pieces, one label with its area', () => {
+    const L: SketchRoom = {
+      id: 'l',
+      name: 'Living',
+      kind: 'living',
+      points: [
+        [0, 0],
+        [3, 0],
+        [3, 2],
+        [6, 2],
+        [6, 5],
+        [0, 5],
+      ],
+    }
+    const plan = planFromSketch(sketch({ rooms: [L] }), meta)
+    expect(validatePlan(plan)).toEqual([])
+    expect(plan.shell.walls).toHaveLength(6)
+    expect(plan.shell.walls.every((w) => w.kind === 'exterior')).toBe(true)
+    expect(plan.shell.baseFloors.map((f) => f.rect)).toEqual([
+      [0, 0, 3, 5],
+      [3, 2, 6, 5],
+    ])
+    // Usable floor: inside the outer walls, but not cut where the two pieces meet.
+    expect(plan.shell.rooms.map((r) => [r.id, r.rect, r.label])).toEqual([
+      ['l', [0.1, 0.1, 3, 4.9], true],
+      ['l-2', [3, 2.1, 5.9, 4.9], false],
+    ])
+    expect(plan.shell.rooms[0].labelDims).toBe('24.0 m²')
+    expect(plan.shell.ceilings).toHaveLength(2)
+  })
+
+  it('puts a partition only where an L-shaped room meets its neighbor', () => {
+    const L: SketchRoom = {
+      id: 'l',
+      name: '',
+      kind: 'living',
+      points: [
+        [0, 0],
+        [3, 0],
+        [3, 2],
+        [6, 2],
+        [6, 5],
+        [0, 5],
+      ],
+    }
+    const plan = planFromSketch(sketch({ rooms: [L, room('k', 'kitchen', [3, 0, 6, 2])] }), meta)
+    expect(validatePlan(plan)).toEqual([])
+    const inner = plan.shell.walls.filter((w) => w.kind === 'interior').map((w) => [w.a, w.b])
+    expect(inner).toEqual([
+      [
+        [3, 2],
+        [6, 2],
+      ],
+      [
+        [3, 0],
+        [3, 2],
+      ],
+    ])
+  })
+
+  it('refuses rooms with a slanted wall', () => {
+    const slanted: SketchRoom = {
+      id: 's',
+      name: 'Odd',
+      kind: 'living',
+      points: [
+        [0, 0],
+        [4, 0],
+        [3, 3],
+        [0, 3],
+      ],
+    }
+    expect(() => planFromSketch(sketch({ rooms: [slanted] }), meta)).toThrow(/Odd: every wall must run straight/)
+  })
+
+  it('reads version 1 sketches, whose rooms were rectangles', () => {
+    const old = {
+      version: 1 as const,
+      rooms: [{ id: 'r', name: '', kind: 'living' as const, rect: [0, 0, 4, 3] as [number, number, number, number] }],
+      openings: [],
+      fittings: [],
+      height: 2.6,
+    }
+    expect(readSketch(old).rooms[0].points).toEqual(rectPoints([0, 0, 4, 3]))
+    expect(readSketch(old).version).toBe(2)
   })
 })

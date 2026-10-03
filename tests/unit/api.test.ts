@@ -184,6 +184,15 @@ describe('artwork', () => {
   })
 })
 
+describe('reference images', () => {
+  it('keeps floor plan images apart from the artwork library', async () => {
+    const res = await fetch(`${base}/api/spaces/s1/references?name=plan.png`, { method: 'POST', body: 'img' })
+    expect(await res.json()).toEqual({ name: 'plan.png', url: '/api/spaces/s1/references/plan.png' })
+    expect((await fetch(`${base}/api/spaces/s1/references/plan.png`)).status).toBe(200)
+    expect(await (await fetch(`${base}/api/spaces/s1/artwork`)).json()).toEqual([])
+  })
+})
+
 describe('layout files (decor)', () => {
   const doc = { version: 1, items: [plant] }
 

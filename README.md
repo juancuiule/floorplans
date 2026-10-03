@@ -29,11 +29,11 @@ pnpm build && pnpm start    # the same, as a production server on http://localho
 
 Everyone's data lives in **spaces** ([ADR 0010](docs/adr/0010-spaces.md)). A space holds a person's plans, the layouts of each plan, and their artwork, and its link is its key: there are no accounts yet, so anyone with the link can open it. The catalog of furniture, plants and lights is shared by everyone; artwork never leaves its space.
 
-- A **plan** is an apartment: walls, openings, rooms, fittings, materials, location (for the sun) and design rules. Draw one in the floor plan editor, start from an example in `examples/`, or write the JSON by hand (type in `src/model/plan.ts`).
+- A **plan** is an apartment: walls, openings, rooms, fittings, materials, location (for the sun) and design rules. Draw one in the floor plan editor (over a picture of your floor plan, if you have one), start from an example in `examples/`, or write the JSON by hand (type in `src/model/plan.ts`).
 - A **layout** is a furnished version of a plan: its decor items, groups and finishes. A plan can have several, and A/B compare them.
 - Both are checked when they load: a mistake shows up as a list of problems, not a broken scene.
 
-The server keeps spaces as folders in `storage/` (`FLOORPLAN_DATA`), one per space, so they can be read, diffed and edited by hand. ![The floor plan editor: rooms drawn on a grid, with the walls, doors, windows and fittings worked out from them](docs/images/floorplan-editor.jpg)
+The server keeps spaces as folders in `storage/` (`FLOORPLAN_DATA`), one per space, so they can be read, diffed and edited by hand. ![The floor plan editor: rooms traced over a reference image of the floor plan, with the walls, doors, windows and fittings worked out from them](docs/images/floorplan-editor.jpg)
 
 To bring a workspace folder in (like the apartment in the screenshots, `examples/monoambiente`, artwork included):
 

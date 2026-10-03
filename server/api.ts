@@ -12,7 +12,7 @@ import {
   listLayouts,
   renameLayout,
 } from './layouts.ts'
-import type { SpaceStore } from './storage.ts'
+import type { Library, SpaceStore } from './storage.ts'
 
 // The API, as one plain node:http handler: the dev server mounts it as middleware
 // (server/devServer.ts) and the production server in front of the built app
@@ -35,6 +35,7 @@ import type { SpaceStore } from './storage.ts'
 //   GET    /api/spaces/<s>/artwork                     the space's image library
 //   POST   /api/spaces/<s>/artwork?name=               upload one image (raw body)
 //   GET    /api/spaces/<s>/artwork/<name>              one image
+//   …/references[/<name>]                             the same for floor plan images traced in the editor
 //   GET    /api/image?url=<link>                       a remote image for the TV screen
 
 const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)$/i
@@ -80,7 +81,7 @@ export function createApi(store: SpaceStore): Handler {
           return send(res, 200, { ok: true })
         }
       }
-      if (section === 'artwork') return await artwork(store, req, res, space, plan)
+      if (section === 'artwork' || section === 'references') return await library(store, req, res, space, section, plan)
       if (section === 'plans' && !plan && method === 'POST') {
         const body = await readJson(req)
         return send(res, 201, { id: await store.createPlan(space, body) })
@@ -138,9 +139,16 @@ export function createApi(store: SpaceStore): Handler {
   }
 }
 
-async function artwork(store: SpaceStore, req: IncomingMessage, res: ServerResponse, space: string, name?: string) {
+async function library(
+  store: SpaceStore,
+  req: IncomingMessage,
+  res: ServerResponse,
+  space: string,
+  kind: Library,
+  name?: string,
+) {
   await store.requireSpace(space)
-  const dir = store.artworkDir(space)
+  const dir = store.libraryDir(space, kind)
   const method = req.method ?? 'GET'
   if (name && method === 'GET') {
     const file = path.join(dir, name)
@@ -160,7 +168,7 @@ async function artwork(store: SpaceStore, req: IncomingMessage, res: ServerRespo
     return send(
       res,
       200,
-      files.map((f) => ({ name: f, url: store.artworkUrl(space, f) })),
+      files.map((f) => ({ name: f, url: store.artworkUrl(space, f, kind) })),
     )
   }
   if (!name && method === 'POST') {
@@ -170,7 +178,7 @@ async function artwork(store: SpaceStore, req: IncomingMessage, res: ServerRespo
     await fs.mkdir(dir, { recursive: true })
     const file = await uniqueName(dir, wanted)
     await fs.writeFile(path.join(dir, file), body)
-    return send(res, 200, { name: file, url: store.artworkUrl(space, file) })
+    return send(res, 200, { name: file, url: store.artworkUrl(space, file, kind) })
   }
   send(res, 404, { error: 'Not found' })
 }

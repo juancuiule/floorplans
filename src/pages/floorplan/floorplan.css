@@ -1,17 +1,15 @@
-/* The floor plan editor: the drawing on the left, the panel on the right. */
+/*
+ * The floor plan editor. It uses the 3D editor's toolbar, panel, controls and
+ * hint (src/styles/); what is here is the drawing and the editor's own bits.
+ */
 
-.fp {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  grid-template-columns: 1fr var(--panel-w);
+.fp-app {
   background: var(--bg);
 }
 
 .fp-canvas {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
+  position: absolute;
+  inset: 0;
 }
 
 .fp-canvas svg {
@@ -27,8 +25,13 @@
 .fp-canvas svg[data-tool='window'],
 .fp-canvas svg[data-tool='glassDoor'],
 .fp-canvas svg[data-tool='passage'],
-.fp-canvas svg[data-tool='fitting'] {
+.fp-canvas svg[data-tool='fitting'],
+.fp-canvas svg[data-tool='calibrate'] {
   cursor: crosshair;
+}
+
+.fp-canvas svg[data-tool='reference'] {
+  cursor: move;
 }
 
 .fp-label {
@@ -39,14 +42,27 @@
 
 .fp-dims {
   fill: var(--muted);
+  font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
 
-.fp-handle {
+.fp-corner-handle {
   fill: var(--surface);
   stroke: var(--focus);
-  stroke-width: 0.015;
-  cursor: nwse-resize;
+  cursor: move;
+}
+
+.fp-edge-handle {
+  fill: var(--focus);
+  stroke: var(--surface);
+}
+
+.fp-edge-handle[data-axis='z'] {
+  cursor: ns-resize;
+}
+
+.fp-edge-handle[data-axis='x'] {
+  cursor: ew-resize;
 }
 
 .fp-opening,
@@ -54,128 +70,46 @@
   cursor: grab;
 }
 
-.fp-zoom {
-  position: absolute;
-  left: var(--gutter);
-  bottom: var(--gutter);
-}
-
 .fp-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px var(--gutter);
-  background: var(--panel);
-  box-shadow: var(--shadow);
-  overflow-y: auto;
+  font-size: 12px;
 }
 
-.fp-panel h1 {
-  font-size: 18px;
-  margin: 4px 0 4px;
+.fp-footer {
+  flex: none;
+  padding: 12px;
+  border-top: 1px solid var(--line);
 }
 
-.fp-field {
-  display: grid;
-  gap: 4px;
-  font-size: 13px;
+.fp-footer .btn {
+  width: 100%;
+  min-height: 36px;
 }
 
-.fp-field span {
-  color: var(--muted);
-}
-
-.fp-field input,
-.fp-field select {
-  height: 32px;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-}
-
-.fp-tools {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.fp-tools legend {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-
-.fp-tools label {
-  display: inline-flex;
-  align-items: center;
-  height: 30px;
-  padding: 0 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.fp-tools label.on {
+.btn.fp-primary {
   background: var(--accent);
-  border-color: var(--accent);
   color: var(--accent-ink);
 }
 
-.fp-tools label:has(input:focus-visible) {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+.btn.fp-primary:disabled {
+  opacity: 0.45;
 }
 
-.fp-tools input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+.btn[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
-.fp-hint {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.fp-inspector {
-  display: grid;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
+.fp-calibrate {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .fp-problems {
   margin: 0;
-  padding: 10px 12px 10px 28px;
+  padding: 8px 10px 8px 26px;
   border-radius: var(--radius-sm);
-  background: rgb(138 82 0 / 0.08);
+  background: #fbf1df;
   color: var(--warn);
-  font-size: 13px;
   line-height: 1.45;
-}
-
-.fp-actions {
-  margin-top: auto;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-@media (max-width: 760px) {
-  .fp {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
-  }
-
-  .fp-panel {
-    max-height: 45vh;
-  }
 }

@@ -1,6 +1,6 @@
 # Spaces: many people's apartments on one server, without accounts yet
 
-Status: accepted. Amends [0001](0001-dev-server-is-the-backend.md), [0002](0002-plans-are-bundled-data.md) and [0009](0009-workspaces.md).
+Status: accepted, amended by [0011](0011-right-angled-rooms.md) (rooms are drawn as right-angled polygons). Amends [0001](0001-dev-server-is-the-backend.md), [0002](0002-plans-are-bundled-data.md) and [0009](0009-workspaces.md).
 
 The app served one person's apartment from files in the repo. To make it usable by others, one server now holds many **spaces**: a space is one person's (or household's) plans, the layouts of each plan, and their artwork. A space is identified by a random 12-character id in its link (`/?space=<id>`), and that link is the only key to it: there are no accounts yet. The furniture, plant and lamp catalog stays code, the same for everyone; artwork never leaves its space.
 

@@ -38,17 +38,18 @@ Walls are drawn by their **centerline**, so a 20 cm wall whose inner face is at 
 
 ## 3. Draw the floor plan
 
-**Draw a floor plan** on your space's page opens the editor:
+**Draw a floor plan** on your space's page opens the editor. It works like the 3D editor: tools in the toolbar, settings in the panel on the right.
 
-![The floor plan editor](images/floorplan-editor.jpg)
+1. **Add the reference image** (panel → *Reference image*): a picture of your floor plan. It shows under the drawing, half transparent. Click *Set scale*, click both ends of a length you know on it (a dimension line, a wall you measured) and type the length: now the drawing and the image share a scale. *Move* drags the image into place.
+2. **Trace the rooms.** With *Room* (`R`), click each corner of a room on its wall **centerlines**; every edge runs straight across or up the plan, so L- and U-shaped rooms are a few more clicks. Close it on the first corner (or `Enter`). For a rectangle, just drag. Corners snap to other rooms' corners, so neighbors share their wall. Pick each room's kind in the panel: it decides its floor, and a balcony gets railings instead of walls.
+3. **Walls** are worked out for you and drawn as you go: 20 cm outer walls, 10 cm partitions between rooms (which a layout can later take out, Room tab → *Walls*).
+4. **Doors and windows.** *Door*, *Window*, *Glass door* (floor to ceiling, e.g. onto the balcony) or *Opening* (a passage without a door): click a wall. Put the front door in the wall at the entry end: walk mode starts there.
+5. **Fittings.** Toilet, basin, shower, counter, sink and cooktop: pick one, click to place it, `R` to turn it.
+6. Set the **city** (for the sun) and the **ceiling height**, and **Create and open in 3D**.
 
-1. **Rooms.** With the *Room* tool, drag on the grid. Draw each room on its wall **centerlines**, edge to edge with its neighbors: a room's edges snap to other rooms' edges, and two rooms that share an edge share the wall along it. Pick each room's kind in the panel (living, bedroom, kitchen, bathroom, hall, balcony): it decides its floor finish zone, and a balcony gets railings instead of walls.
-2. **Walls** are worked out for you and drawn as you go: 20 cm outer walls, 10 cm partitions between rooms (which a layout can later take out, Room tab → *Walls*).
-3. **Doors and windows.** Pick *Door*, *Window*, *Glass door* (floor to ceiling, e.g. onto the balcony) or *Opening* (a passage without a door) and click a wall. Drag one along its wall, or change its width in the panel. Put the front door in the wall at the entry end: walk mode starts there.
-4. **Fittings.** Toilet, basin, shower, counter, sink and cooktop: pick one, click to place it, `R` to turn it.
-5. Set the **city** (for the sun) and the **ceiling height**, and **Create and open in 3D**.
+![Setting the reference image's scale from its 6.00 m dimension](images/floorplan-calibrate.jpg)
 
-The panel lists what is missing or wrong (overlapping rooms, no door yet) before you save. *Edit floor plan* on the space's page opens it again; walls and floors follow the rooms when you move them. The editor draws rectangular rooms with straight walls; for anything else (angled walls, columns, a dropped ceiling), write the plan by hand.
+With *Select*, drag a room to move it, a corner to reshape it (its neighbors follow so corners stay square), or the dot on an edge to push or pull that wall. The panel lists what is missing or wrong (overlapping rooms, no door yet) before you save. *Edit floor plan* on the space's page opens it again, reference image included. Walls must run along the plan's axes ([ADR 0011](adr/0011-right-angled-rooms.md)); for angled walls, columns or a dropped ceiling, write the plan by hand.
 
 ## 4. Or write the plan by hand
 

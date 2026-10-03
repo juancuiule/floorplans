@@ -159,3 +159,10 @@ export const writePlan = (space: string, plan: string, data: unknown) =>
   call<unknown>(`${spaceBase(space)}/plans/${encodeURIComponent(plan)}`, { method: 'PUT', ...json(data) })
 export const deletePlan = (space: string, plan: string) =>
   call<unknown>(`${spaceBase(space)}/plans/${encodeURIComponent(plan)}`, { method: 'DELETE' })
+
+/** Uploads a floor plan image to trace in the editor; it goes to the space's references, not its artwork. */
+export const uploadReference = (space: string, file: File) =>
+  call<LibraryImage>(`${spaceBase(space)}/references?name=${encodeURIComponent(file.name)}`, {
+    method: 'POST',
+    body: file,
+  })

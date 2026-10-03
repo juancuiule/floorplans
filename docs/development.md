@@ -47,6 +47,7 @@ Both servers keep spaces in `FLOORPLAN_DATA` (default `storage/`).
 | `POST` · `PATCH` · `DELETE …/layouts[?file=<slug>]` | Save a new layout (`{ name, data? \| from? }`) · rename · delete a named one. |
 | `GET` · `POST /api/spaces/<s>/artwork[?name=…]` | List the space's images · upload one (raw body). |
 | `GET /api/spaces/<s>/artwork/<name>` | One image. |
+| `…/references[/<name>]` | The same for floor plan images traced in the editor (kept apart from the artwork). |
 | `GET /api/image?url=<link>` | A remote image for the TV screen (public http(s) only, 15 MB). |
 
 Under `pnpm dev`, changes to layout files on disk are pushed to open tabs (`decor:changed`, `layouts:changed`, with the space and plan), so editing a layout by hand updates the app live.
