@@ -147,6 +147,8 @@ export const createSpace = (name: string) =>
 export const getSpace = (space: string) => call<SpaceInfo>(spaceBase(space))
 export const renameSpace = (space: string, name: string) =>
   call<unknown>(spaceBase(space), { method: 'PATCH', ...json({ name }) })
+/** Deletes a space with its plans, layouts and images. There is no undo. */
+export const deleteSpace = (space: string) => call<unknown>(spaceBase(space), { method: 'DELETE' })
 export const listTemplates = () => call<TemplateInfo[]>('/api/templates')
 
 /** Adds a plan: a copy of a template, or a plan drawn in the editor. Returns its id. */

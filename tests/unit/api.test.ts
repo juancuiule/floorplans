@@ -83,6 +83,16 @@ describe('spaces and plans', () => {
     expect(((await (await fetch(`${base}/api/spaces/${id}`)).json()) as { name: string }).name).toBe('Home')
   })
 
+  it('deletes a space with everything in it, and 404s it afterwards', async () => {
+    await writeLayout(null, { version: 1, items: [plant] })
+    await fetch(`${base}/api/spaces/s1/artwork?name=mine.png`, { method: 'POST', body: 'x' })
+    expect((await fetch(`${base}/api/spaces/s1`, { method: 'DELETE' })).status).toBe(200)
+    await expect(fs.access(store.spaceDir('s1'))).rejects.toThrow()
+    expect((await fetch(`${base}/api/spaces/s1`)).status).toBe(404)
+    expect((await fetch(`${base}/api/spaces/s1`, { method: 'DELETE' })).status).toBe(404)
+    expect((await fetch(`${base}/api/spaces/${encodeURIComponent('../data')}`, { method: 'DELETE' })).status).toBe(400)
+  })
+
   it('lists the templates from examples/', async () => {
     const t = (await (await fetch(`${base}/api/templates`)).json()) as { id: string }[]
     expect(t.map((x) => x.id)).toEqual(['loft', 'monoambiente'])

@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   createPlan,
   deletePlan,
+  deleteSpace,
   getSpace,
   listTemplates,
   renameSpace,
   type SpaceInfo,
   type TemplateInfo,
 } from '../decor/api'
-import { rememberSpace } from './recent'
+import { forgetSpace, rememberSpace } from './recent'
 import { links } from '../project/launch'
 import './pages.css'
 
@@ -63,6 +64,15 @@ export function SpacePage({ space }: { space: string }) {
       if (!window.confirm(`Delete “${planName}” and all its layouts? This cannot be undone.`)) return
       await deletePlan(space, id)
       await refresh()
+    })
+
+  const [confirmName, setConfirmName] = useState('')
+  const removeSpace = () =>
+    run(async () => {
+      if (!info || confirmName.trim() !== info.name) return
+      await deleteSpace(space)
+      forgetSpace(space)
+      window.location.href = links.home()
     })
 
   const copyLink = async () => {
@@ -142,7 +152,9 @@ export function SpacePage({ space }: { space: string }) {
           ))}
           <a className="card new" href={links.floorplan(space)}>
             <span className="card-title">Draw a floor plan</span>
-            <span className="card-meta">Rooms, doors and windows on a grid. Walls are worked out for you.</span>
+            <span className="card-meta">
+              Trace a picture of your floor plan, or draw rooms on a grid. Walls are worked out for you.
+            </span>
           </a>
         </div>
 
@@ -160,7 +172,43 @@ export function SpacePage({ space }: { space: string }) {
             </div>
           </>
         )}
+
+        <section className="danger-zone" aria-labelledby="delete-space">
+          <h2 id="delete-space">Delete this space</h2>
+          <p className="lede">
+            Deletes {whatItHolds(info.plans.length)}, for everyone with the link. This cannot be undone.
+          </p>
+          <form
+            className="inline-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void removeSpace()
+            }}
+          >
+            <label className="sr-only" htmlFor="confirm-delete">
+              Type the space’s name to confirm
+            </label>
+            <input
+              id="confirm-delete"
+              type="text"
+              placeholder={`Type “${info.name}” to confirm`}
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              autoComplete="off"
+            />
+            <button className="btn danger" type="submit" disabled={confirmName.trim() !== info.name}>
+              Delete space
+            </button>
+          </form>
+        </section>
       </div>
     </main>
   )
+}
+
+/** What deleting a space takes with it, in words. */
+function whatItHolds(plans: number) {
+  if (plans === 0) return 'its artwork'
+  if (plans === 1) return 'its plan, the plan’s layouts and its artwork'
+  return `its ${plans} plans, all their layouts and its artwork`
 }

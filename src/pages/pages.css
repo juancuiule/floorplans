@@ -193,3 +193,22 @@ button.card {
   background: var(--surface);
   outline: none;
 }
+
+.danger-zone {
+  margin-top: 48px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.danger-zone h2 {
+  color: var(--danger);
+}
+
+.danger-zone .lede {
+  margin-bottom: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

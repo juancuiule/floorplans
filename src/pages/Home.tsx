@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { createSpace } from '../decor/api'
-import { recentSpaces, rememberSpace } from './recent'
+import { forgetSpace, recentSpaces, rememberSpace } from './recent'
 import { links } from '../project/launch'
 import './pages.css'
 
 /** The front door: the spaces this browser has opened, and a new one. */
 export function Home() {
-  const [spaces] = useState(recentSpaces)
+  const [spaces, setSpaces] = useState(recentSpaces)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -64,10 +64,28 @@ export function Home() {
             <h2>Your spaces on this browser</h2>
             <div className="cards">
               {spaces.map((s) => (
-                <a key={s.id} className="card" href={links.space(s.id)}>
-                  <span className="card-title">{s.name || 'Untitled space'}</span>
+                <article key={s.id} className="card">
+                  <a className="card-title" href={links.space(s.id)} style={{ color: 'inherit' }}>
+                    {s.name || 'Untitled space'}
+                  </a>
                   <span className="card-meta">Opened {new Date(s.opened).toLocaleDateString()}</span>
-                </a>
+                  <div className="card-actions">
+                    <a className="btn primary" href={links.space(s.id)}>
+                      Open
+                    </a>
+                    <button
+                      className="btn"
+                      type="button"
+                      title="Only from this browser’s list: the space itself is kept"
+                      onClick={() => {
+                        forgetSpace(s.id)
+                        setSpaces(recentSpaces())
+                      }}
+                    >
+                      Remove from this list
+                    </button>
+                  </div>
+                </article>
               ))}
             </div>
           </>

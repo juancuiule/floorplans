@@ -126,6 +126,12 @@ export class SpaceStore {
     await write(file, { ...(await readJson(file)), name: cleanName(name, 'My space') })
   }
 
+  /** Deletes a space and everything in it: plans, layouts, artwork, reference images. There is no undo. */
+  async deleteSpace(space: string) {
+    await this.requireSpace(space)
+    await fs.rm(this.spaceDir(space), { recursive: true, force: true })
+  }
+
   async plans(space: string): Promise<PlanSummary[]> {
     const dir = path.join(this.spaceDir(space), 'plans')
     const files = existsSync(dir) ? (await fs.readdir(dir)).filter((f) => f.endsWith('.plan.json')) : []

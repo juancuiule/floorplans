@@ -5,7 +5,8 @@ Everything the app does, as a reference. For setting it up with your own apartme
 ## Spaces and plans
 
 - **Home** (`/`): make a space, or reopen one this browser has opened before.
-- **A space** (`/?space=<id>`): its plans, with *Open in 3D*, *Edit floor plan* (for plans drawn in the editor) and *Delete*; *Draw a floor plan*; or start from an example (furnished, without its artwork). Rename the space by editing its title; *Copy this space's link* copies its key. There are no accounts: anyone with the link can edit.
+- **A space** (`/?space=<id>`): its plans, with *Open in 3D*, *Edit floor plan* (for plans drawn in the editor) and *Delete*; *Draw a floor plan*; or start from an example (furnished, without its artwork). Rename the space by editing its title; *Copy this space's link* copies its key. There are no accounts: anyone with the link can edit. *Delete this space*, at the bottom, deletes it with all its plans, layouts and artwork once you type its name; there is no undo.
+- On the home page, *Remove from this list* only hides a space from this browser's list; the space itself is kept.
 - **Artwork** belongs to the space: every plan in it shares the library, other spaces never see it. The catalog of furniture, plants and lights is the same for everyone.
 - In the 3D app, the plan's name (top left) leads back to the space.
 

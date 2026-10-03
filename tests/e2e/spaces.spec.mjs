@@ -132,5 +132,17 @@ test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) =>
     await expect(page.locator('.fp-reference')).toBeVisible()
   })
 
+  await test.step('deleting the space takes everything, after typing its name', async () => {
+    await page.goto(`${BASE_URL}/?space=${space}`)
+    const remove = page.getByRole('button', { name: 'Delete space' })
+    await expect(remove).toBeDisabled()
+    await page.getByLabel('Type the space’s name to confirm').fill('E2E home')
+    await remove.click()
+    await page.waitForURL((url) => !url.search)
+    expect((await fetch(`${BASE_URL}/api/spaces/${space}`)).status).toBe(404)
+    // Gone from this browser's list too.
+    await expect(page.getByRole('link', { name: 'E2E home' })).toHaveCount(0)
+  })
+
   expect(errors).toEqual([])
 })

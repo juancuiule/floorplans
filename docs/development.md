@@ -39,7 +39,7 @@ Both servers keep spaces in `FLOORPLAN_DATA` (default `storage/`).
 |---|---|
 | `GET /api/templates` | The examples a new plan can start from. |
 | `POST /api/spaces` | `{ name }` makes a space, returns `{ id }`. |
-| `GET /api/spaces/<s>` · `PATCH` | `{ id, name, plans }` · `{ name }` renames. |
+| `GET /api/spaces/<s>` · `PATCH` · `DELETE` | `{ id, name, plans }` · `{ name }` renames · deletes the space and everything in it. |
 | `POST /api/spaces/<s>/plans` | `{ name, template \| plan }`: a copy of an example (without artwork), or a plan from the editor. Returns `{ id }`. |
 | `GET` · `PUT` · `DELETE /api/spaces/<s>/plans/<p>` | The plan, verbatim · replace it (checked, same id) · delete it with its layouts. |
 | `GET` · `PUT /api/spaces/<s>/plans/<p>/decor` | Read (verbatim) or replace the main layout; `?file=<slug>` another one. |

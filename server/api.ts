@@ -22,6 +22,7 @@ import type { Library, SpaceStore } from './storage.ts'
 //   POST   /api/spaces                                 { name } → { id }
 //   GET    /api/spaces/<s>                             { id, name, plans }
 //   PATCH  /api/spaces/<s>                             { name }
+//   DELETE /api/spaces/<s>                             the space and everything in it
 //   POST   /api/spaces/<s>/plans                       { name, template | plan } → { id }
 //   GET    /api/spaces/<s>/plans/<p>                   the plan
 //   PUT    /api/spaces/<s>/plans/<p>                   replace the plan (checked)
@@ -78,6 +79,10 @@ export function createApi(store: SpaceStore): Handler {
         if (method === 'GET') return send(res, 200, await store.space(space))
         if (method === 'PATCH') {
           await store.renameSpace(space, (await readJson(req)).name)
+          return send(res, 200, { ok: true })
+        }
+        if (method === 'DELETE') {
+          await store.deleteSpace(space)
           return send(res, 200, { ok: true })
         }
       }
