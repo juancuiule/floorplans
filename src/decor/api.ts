@@ -82,6 +82,12 @@ export async function writeLayout(slug: string | null, body: string): Promise<vo
   }).catch(() => {})
 }
 
+/** Another plan of the open space: the plan and its main layout, unchecked. */
+export async function readOtherPlan(plan: string): Promise<{ plan: unknown; layout: unknown }> {
+  const base = `${spaceBase()}/plans/${encodeURIComponent(plan)}`
+  return { plan: await call<unknown>(base), layout: await call<unknown>(`${base}/decor`) }
+}
+
 export const listLayouts = () => call<LayoutInfo[]>(`${planBase()}/layouts`)
 
 /** Saves `data` as a new layout named `name`; returns the slug the server picked. */

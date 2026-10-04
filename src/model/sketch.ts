@@ -10,8 +10,10 @@ import type { MaterialDef, ObjectType, Opening, Rect, SceneObject, Vec2, Vec3, W
 // stays consistent however the rooms move. The sketch is kept in the plan file
 // (`sketch`), so a plan drawn here can be opened in the editor again.
 //
-// Rooms are drawn on wall centerlines: two rooms that share an edge share the
-// wall along it. Every edge runs along x or z; meters throughout.
+// Two rooms that share an edge share the wall along it, centered on the edge;
+// an outer wall stands outside its room's edge, so rooms are traced to the
+// inside of their walls (docs/adr/0012). Every edge runs along x or z; meters
+// throughout.
 
 export type RoomKind = 'living' | 'bedroom' | 'kitchen' | 'bath' | 'hall' | 'balcony'
 
@@ -19,7 +21,7 @@ export interface SketchRoom {
   id: string
   name: string
   kind: RoomKind
-  /** Corners on wall centerlines, in order; every edge runs along x or z. */
+  /** Corners in order, on the centerline of walls shared with other rooms and the inner face of outer walls; every edge runs along x or z. */
   points: Vec2[]
 }
 
@@ -31,6 +33,10 @@ export interface SketchOpening {
   /** A point on the wall: the opening's center. */
   at: Vec2
   width: number
+  /** Doors: the jamb the hinge is on, the one with the lower x (or z) by default. */
+  hinge?: 'lo' | 'hi'
+  /** Doors: the side the leaf opens to, toward +z (or +x) or away; by default into the room it closes. */
+  opens?: 1 | -1
 }
 
 export type FittingType = 'toilet' | 'basin' | 'showerTray' | 'counter' | 'kitchenSink' | 'cooktop'
@@ -42,6 +48,8 @@ export interface SketchFitting {
   at: Vec2
   /** Degrees around y; 0 faces +z. */
   rotation: number
+  /** Width and depth when not the default size, meters. */
+  size?: [number, number]
 }
 
 /** An image of the floor plan under the drawing, to trace. */
@@ -67,6 +75,13 @@ export interface Sketch {
   /** Floor to ceiling, meters. */
   height: number
   reference?: ReferenceImage
+  /**
+   * Where an outer wall stands against the room edge it closes: 'outside' it,
+   * so the edge is the wall's inner face, as a plan is traced; or 'centered' on
+   * it, as sketches drawn before tracing did (and as when missing). Walls
+   * between rooms are always centered on their shared edge.
+   */
+  outerWalls?: 'outside' | 'centered'
 }
 
 export interface PlanMeta {
@@ -94,12 +109,47 @@ export const FITTINGS: Record<FittingType, { label: string; size: Vec3; y: numbe
   cooktop: { label: 'Cooktop', size: [0.3, 0.01, 0.5], y: 0.9 },
 }
 
+/** A fitting's size, [w, h, d]: its own width and depth, or the default. */
+export function fittingSize(f: SketchFitting): Vec3 {
+  const [w, h, d] = FITTINGS[f.type].size
+  return f.size ? [f.size[0], h, f.size[1]] : [w, h, d]
+}
+
 export const EXTERIOR_T = 0.2
 export const INTERIOR_T = 0.1
 const DOOR_H = 2.05
 const EPS = 1e-6
 
-export const emptySketch = (): Sketch => ({ version: 2, rooms: [], openings: [], fittings: [], height: 2.6 })
+/**
+ * How a door swings: its hinge jamb, and the side it opens to (+1 toward +z for
+ * a door in a wall along x, toward +x in a wall along z). Unless the sketch says
+ * otherwise, a door opens into the room it closes: the indoor one at the front
+ * door, the smaller of the two between rooms (a bathroom, a bedroom).
+ */
+export function doorSwing(
+  o: SketchOpening,
+  rooms: SketchRoom[],
+  alongX: boolean,
+): { hinge: 'lo' | 'hi'; opens: 1 | -1 } {
+  const hinge = o.hinge ?? 'lo'
+  if (o.opens) return { hinge, opens: o.opens }
+  const beside = (side: 1 | -1) => {
+    const p: Vec2 = alongX ? [o.at[0], o.at[1] + side * 0.05] : [o.at[0] + side * 0.05, o.at[1]]
+    return rooms.find((r) => r.kind !== 'balcony' && contains(r.points, p))
+  }
+  const [lo, hi] = [beside(-1), beside(1)]
+  if (!lo || !hi) return { hinge, opens: hi ? 1 : -1 }
+  return { hinge, opens: area(hi.points) <= area(lo.points) ? 1 : -1 }
+}
+
+export const emptySketch = (): Sketch => ({
+  version: 2,
+  rooms: [],
+  openings: [],
+  fittings: [],
+  height: 2.6,
+  outerWalls: 'outside',
+})
 
 /** A sketch as stored, read: version 1 drew rooms as rectangles (`rect`), which become polygons. */
 export function readSketch(
@@ -185,13 +235,21 @@ interface Segment {
   to: number
   sort: 'exterior' | 'interior' | 'railing'
   rooms: SketchRoom[]
+  /** How far the wall's centerline is off the drawn line: half its thickness, outward, for an outer wall that stands outside it. */
+  shift: number
 }
 
 /** Runs joined into straight segments: exterior walls and railings run on; partitions stop where their rooms change. */
-function segments(rooms: SketchRoom[]): Segment[] {
+function segments(rooms: SketchRoom[], outside: boolean): Segment[] {
+  // An outer wall with nothing at all beyond it stands outside the edge; one onto a balcony stays centered.
+  const shiftOf = (r: Run, sort: WallSort) =>
+    outside && sort === 'exterior' && !(r.lo && r.hi) ? (r.lo ? EXTERIOR_T / 2 : -EXTERIOR_T / 2) : 0
   const runs = edgeRuns(rooms)
-    .map((r) => ({ ...r, sort: sortOf(r) }))
-    .filter((r): r is Run & { sort: Segment['sort'] } => r.sort !== 'none')
+    .map((r) => {
+      const sort = sortOf(r)
+      return { ...r, sort, shift: shiftOf(r, sort) }
+    })
+    .filter((r): r is Run & { sort: Segment['sort']; shift: number } => r.sort !== 'none')
     .sort((p, q) => p.axis.localeCompare(q.axis) || p.line - q.line || p.from - q.from)
   const out: Segment[] = []
   for (const r of runs) {
@@ -204,11 +262,12 @@ function segments(rooms: SketchRoom[]): Segment[] {
       last.line === r.line &&
       Math.abs(last.to - r.from) < EPS &&
       last.sort === r.sort &&
+      last.shift === r.shift &&
       (r.sort !== 'interior' || samePair(last))
     ) {
       last.to = r.to
       for (const x of rs) if (!last.rooms.includes(x)) last.rooms.push(x)
-    } else out.push({ axis: r.axis, line: r.line, from: r.from, to: r.to, sort: r.sort, rooms: rs })
+    } else out.push({ axis: r.axis, line: r.line, from: r.from, to: r.to, sort: r.sort, rooms: rs, shift: r.shift })
   }
   return out
 }
@@ -225,7 +284,8 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
   // Each room as rectangles, largest first: floors, ceilings and rooms in 3D are rectangles.
   const pieces = new Map(rooms.map((r) => [r, rectangles(simplify(r.points))]))
   const h = sketch.height
-  const segs = segments(rooms)
+  const outside = sketch.outerWalls === 'outside'
+  const segs = segments(rooms, outside)
 
   // Walls, with ids by role and position so they read well in the UI.
   const walls: Wall[] = []
@@ -235,7 +295,7 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
   let ext = 0
   let int = 0
   for (const s of segs) {
-    const along = (v: number): Vec2 => (s.axis === 'x' ? [v, s.line] : [s.line, v])
+    const along = (v: number): Vec2 => (s.axis === 'x' ? [v, s.line + s.shift] : [s.line + s.shift, v])
     if (s.sort === 'railing') {
       const [px, pz] = along((s.from + s.to) / 2)
       railings.push({
@@ -250,9 +310,9 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
     const exterior = s.sort === 'exterior'
     const t = exterior ? EXTERIOR_T : INTERIOR_T
     // Exterior walls run on past their ends to close the corners.
-    const pad = exterior ? t / 2 : 0
-    const p0 = along(s.from - pad)
-    const p1 = along(s.to + pad)
+    const [pad0, pad1] = !exterior ? [0, 0] : outside ? cornerPads(s, segs) : [t / 2, t / 2]
+    const p0 = along(s.from - pad0)
+    const p1 = along(s.to + pad1)
     const id = exterior ? `outer-${++ext}` : `wall-${++int}`
     walls.push({
       id,
@@ -282,7 +342,8 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
     const length = Math.hypot(wall.b[0] - wall.a[0], wall.b[1] - wall.a[1])
     const width = Math.min(o.width, length - 0.1)
     const offset = round(Math.max(0.05, Math.min(length - width - 0.05, along - width / 2)))
-    ;(wall.openings ??= []).push(openingOf(o, offset, round(width), h))
+    const alongX = wall.a[1] === wall.b[1]
+    ;(wall.openings ??= []).push(openingOf(o, offset, round(width), h, doorSwing(o, rooms, alongX), alongX))
   }
 
   // The sun comes in through the facade (the exterior wall with the most glass); windowless outer walls are party walls.
@@ -304,7 +365,7 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
       type: f.type as ObjectType,
       position: [round(f.at[0]), spec.y, round(f.at[1])],
       rotation: f.rotation,
-      size: spec.size,
+      size: fittingSize(f),
     }
   })
   const downlights: SceneObject[] = inside.map((r) => {
@@ -315,6 +376,7 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
   const pieceId = (r: SketchRoom, i: number) => (i === 0 ? r.id : `${r.id}-${i + 1}`)
 
   const [bx0, bz0, bx1, bz1] = bounds
+  const slabPad = outside ? EXTERIOR_T : EXTERIOR_T / 2
   return {
     version: 1,
     id: meta.id,
@@ -325,17 +387,19 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
     shell: {
       walls,
       bulges: [],
-      // The label goes on the largest piece; a room that is not a rectangle says its area.
-      rooms: rooms.flatMap((r) =>
-        pieces.get(r)!.map((rect, i) => ({
+      // The label goes on the largest piece; a room that is not a rectangle says its clear area.
+      rooms: rooms.flatMap((r) => {
+        const rects = pieces.get(r)!.map((rect) => innerRect(rect, r, segs))
+        const clear = rects.reduce((sum, [x0, z0, x1, z1]) => sum + (x1 - x0) * (z1 - z0), 0)
+        return rects.map((rect, i) => ({
           id: pieceId(r, i),
           name: roomLabel(r),
-          rect: innerRect(rect, r, segs),
+          rect,
           ...(r.kind === 'bath' || r.kind === 'balcony' ? { floor: floorOf(r) } : {}),
           label: i === 0,
-          ...(i === 0 && pieces.get(r)!.length > 1 ? { labelDims: `${area(r.points).toFixed(1)} m²` } : {}),
-        })),
-      ),
+          ...(i === 0 && rects.length > 1 ? { labelDims: `${clear.toFixed(1)} m²` } : {}),
+        }))
+      }),
       ceilings: inside.flatMap((r) =>
         pieces.get(r)!.map((rect, i) => ({ id: pieceId(r, i), rect, height: h, material: 'ceiling' })),
       ),
@@ -344,9 +408,7 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
         .flatMap((r) => pieces.get(r)!.map((rect, i) => ({ id: pieceId(r, i), rect, material: floorOf(r) }))),
       accentPanels: [],
       slab: {
-        rect: [bx0 - EXTERIOR_T / 2, bz0 - EXTERIOR_T / 2, bx1 + EXTERIOR_T / 2, bz1 + EXTERIOR_T / 2].map(
-          round,
-        ) as Rect,
+        rect: [bx0 - slabPad, bz0 - slabPad, bx1 + slabPad, bz1 + slabPad].map(round) as Rect,
         thickness: 0.18,
         material: 'concrete',
       },
@@ -356,6 +418,38 @@ export function planFromSketch(sketch: Sketch, meta: PlanMeta): Plan {
     sketch,
   }
 }
+
+/**
+ * How far an outer wall runs on past each end, when outer walls stand outside
+ * the rooms: to the far face of the outer wall it meets there. At an outside
+ * corner that closes the corner; at an inside corner the far face is the
+ * room's own edge, so the wall stops short of cutting into it.
+ */
+function cornerPads(s: Segment, segs: Segment[]): [number, number] {
+  const half = EXTERIOR_T / 2
+  const pad = (end: number, dir: 1 | -1) => {
+    const meets = segs.find(
+      (g) =>
+        g.sort === 'exterior' &&
+        g.axis !== s.axis &&
+        Math.abs(g.line - end) < EPS &&
+        g.from - EPS <= s.line &&
+        g.to + EPS >= s.line,
+    )
+    // Past this end to the other wall's centerline, then on by half its thickness.
+    return round((meets ? (meets.line + meets.shift - end) * dir : 0) + half)
+  }
+  return [pad(s.from, -1), pad(s.to, 1)]
+}
+
+/** A drawn room's floor in a plan made from its sketch: its pieces, between the walls. */
+export function piecesOf(plan: Plan, room: SketchRoom): Rect[] {
+  return plan.shell.rooms.filter((p) => p.id === room.id || p.id.startsWith(`${room.id}-`)).map((p) => p.rect)
+}
+
+/** A drawn room's clear floor area, between the walls, in square meters. */
+export const clearArea = (plan: Plan, room: SketchRoom) =>
+  piecesOf(plan, room).reduce((sum, [x0, z0, x1, z1]) => sum + (x1 - x0) * (z1 - z0), 0)
 
 /** Which floor finish zone a room belongs to (the Room tab picks each zone's floor). */
 function floorOf(r: SketchRoom): string {
@@ -380,6 +474,8 @@ function innerRect(rect: Rect, r: SketchRoom, segs: Segment[]): Rect {
     )
     const covered = along.reduce((sum, g) => sum + Math.max(0, Math.min(hi, g.to) - Math.max(lo, g.from)), 0)
     if (covered < hi - lo - EPS) return 0
+    // A wall standing outside the edge leaves the room whole; one centered on it takes half its thickness.
+    if (along.some((g) => g.shift !== 0)) return 0
     return (along.some((g) => g.sort === 'exterior') ? EXTERIOR_T : INTERIOR_T) / 2
   }
   return [x0 + half('z', x0), z0 + half('x', z0), x1 - half('z', x1), z1 - half('x', z1)].map(round) as Rect
@@ -401,14 +497,29 @@ function onWall(w: Wall, p: Vec2): boolean {
   return Math.abs(off - line) <= w.thickness / 2 + 0.05 && along >= lo && along <= hi
 }
 
-function openingOf(o: SketchOpening, offset: number, width: number, h: number): Opening {
+function openingOf(
+  o: SketchOpening,
+  offset: number,
+  width: number,
+  h: number,
+  swing: ReturnType<typeof doorSwing>,
+  alongX: boolean,
+): Opening {
   const base = { id: o.id, offset, width }
+  // Walls run from their lower end (a) up; the leaf's side is set against the
+  // wall's normal, which points to +z for a wall along x and to -x for one along z.
   if (o.kind === 'door')
     return {
       ...base,
       kind: 'door',
       height: DOOR_H,
-      leaf: { hinge: 'a', swing: -1, openDeg: 70, material: 'oakDoor', frameMaterial: 'steelFrame' },
+      leaf: {
+        hinge: swing.hinge === 'lo' ? 'a' : 'b',
+        swing: alongX ? swing.opens : swing.opens === 1 ? -1 : 1,
+        openDeg: 70,
+        material: 'oakDoor',
+        frameMaterial: 'steelFrame',
+      },
     }
   if (o.kind === 'passage') return { ...base, kind: 'passage', height: Math.min(2.2, h) }
   if (o.kind === 'glassDoor')

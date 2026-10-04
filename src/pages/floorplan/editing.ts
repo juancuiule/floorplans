@@ -1,4 +1,4 @@
-import { boundsOf, contains, edgesOf, overlaps, simplify } from '../../model/polygon'
+import { area, boundsOf, contains, edgesOf, isRectilinear, overlaps, simplify } from '../../model/polygon'
 import type { OpeningKind, ReferenceImage, Sketch, SketchRoom } from '../../model/sketch'
 import type { Rect, Vec2 } from '../../model/types'
 
@@ -17,7 +17,13 @@ export const OPENING_WIDTH: Record<OpeningKind, number> = { door: 0.9, window: 1
 /** The drawing grid. */
 export const GRID = 0.05
 /** How close an edge must be to pull a dragged point onto it. */
-const EDGE_SNAP = 0.15
+export const EDGE_SNAP = 0.15
+/**
+ * The same over a reference image: less, so a point clicked on the far face
+ * of a wall is not pulled across it; the gap left is closed in the middle of
+ * the wall instead (closeGaps).
+ */
+export const TRACE_SNAP = 0.05
 /** Smallest room side. */
 export const MIN_SIDE = 0.6
 const EPS = 1e-6
@@ -29,17 +35,17 @@ export const toGrid = (v: number) => round(Math.round(v / GRID) * GRID)
  * Snaps a coordinate: to the nearest of `lines` (other rooms' corners) when one
  * is close, so rooms meet exactly and share their wall; otherwise to the grid.
  */
-export function snap(v: number, lines: number[]): number {
+export function snap(v: number, lines: number[], reach = EDGE_SNAP): number {
   let best: number | null = null
   for (const l of lines)
-    if (Math.abs(l - v) <= EDGE_SNAP && (best === null || Math.abs(l - v) < Math.abs(best - v))) best = l
+    if (Math.abs(l - v) <= reach && (best === null || Math.abs(l - v) < Math.abs(best - v))) best = l
   return best ?? toGrid(v)
 }
 
 /** Snaps a point on both axes. */
-export const snapPoint = (p: Vec2, lines: { x: number[]; z: number[] }): Vec2 => [
-  snap(p[0], lines.x),
-  snap(p[1], lines.z),
+export const snapPoint = (p: Vec2, lines: { x: number[]; z: number[] }, reach = EDGE_SNAP): Vec2 => [
+  snap(p[0], lines.x, reach),
+  snap(p[1], lines.z, reach),
 ]
 
 /** The x and z of every room's corners, except one room's own. */
@@ -104,6 +110,82 @@ export function moveEdge(points: Vec2[], i: number, line: number): Vec2[] {
   const [a, b] = [points[i], points[(i + 1) % n]]
   const alongX = Math.abs(a[1] - b[1]) < EPS
   return points.map((p, k) => (k === i || k === (i + 1) % n ? ((alongX ? [p[0], line] : [line, p[1]]) as Vec2) : p))
+}
+
+/** The widest gap between two rooms that is taken for a wall between them. */
+export const WALL_GAP = 0.35
+
+/**
+ * Closes the gaps room `id` leaves to its neighbors. A plan traced along the
+ * inside of its walls leaves a gap as wide as the wall between two rooms: each
+ * edge that faces another room's edge across a gap up to `reach` meets it in
+ * the middle, where the wall's centerline is, so the two share that wall.
+ * Returns all the rooms, the neighbors' edges moved too.
+ */
+export function closeGaps(rooms: SketchRoom[], id: string, reach = WALL_GAP): SketchRoom[] {
+  const out = rooms.map((r) => ({ ...r, points: r.points.map((p) => [...p] as Vec2) }))
+  const self = out.find((r) => r.id === id)
+  if (!self) return rooms
+  for (let i = 0; i < self.points.length; i++) {
+    const pts = self.points
+    const [a, b] = [pts[i], pts[(i + 1) % pts.length]]
+    const alongX = Math.abs(a[1] - b[1]) < EPS
+    const line = alongX ? a[1] : a[0]
+    const [lo, hi] = span(a, b, alongX)
+    // Which way is out of the room: +1 when the room lies on the lower side of the edge.
+    const m0 = (lo + hi) / 2
+    const dir = contains(pts, alongX ? [m0, line + 0.01] : [line + 0.01, m0]) ? -1 : 1
+    // The neighbors' edges facing this one across a gap; the nearest line wins.
+    let facing: { room: (typeof out)[number]; j: number; line: number }[] = []
+    for (const r of out) {
+      if (r === self) continue
+      edgesOf(r.points).forEach(([c, d], j) => {
+        if (Math.abs(c[1] - d[1]) < EPS !== alongX) return
+        const other = alongX ? c[1] : c[0]
+        const gap = (other - line) * dir
+        if (gap <= EPS || gap > reach) return
+        const [clo, chi] = span(c, d, alongX)
+        const [slo, shi] = [Math.max(lo, clo), Math.min(hi, chi)]
+        if (shi - slo < Math.min(0.3, (hi - lo) / 2)) return
+        // The other room must be beyond its edge, facing back across the gap.
+        const m = (slo + shi) / 2
+        if (!contains(r.points, alongX ? [m, other + 0.01 * dir] : [other + 0.01 * dir, m])) return
+        facing.push({ room: r, j, line: other })
+      })
+    }
+    if (!facing.length) continue
+    const nearest = facing.reduce((x, y) => (Math.abs(y.line - line) < Math.abs(x.line - line) ? y : x)).line
+    facing = facing.filter((f) => Math.abs(f.line - nearest) < EPS)
+    const middle = round((line + nearest) / 2)
+    // Neighbors come halfway when they can; if one cannot, this room goes all the way to it.
+    const theirs = facing.map((f) => ({ f, moved: outward(f.room.points, f.j, middle) }))
+    const meet = theirs.every((t) => t.moved) ? middle : nearest
+    const mine = outward(pts, i, meet)
+    if (!mine) continue
+    self.points = mine
+    if (meet === middle) for (const t of theirs) t.f.room.points = t.moved!
+  }
+  return out.map((r) => ({ ...r, points: simplify(r.points) }))
+}
+
+/** Edge `i` moved out to `line`, if that is a clean move: still square, grown by exactly the strip it crossed. */
+function outward(points: Vec2[], i: number, line: number): Vec2[] | null {
+  const [a, b] = [points[i], points[(i + 1) % points.length]]
+  const alongX = Math.abs(a[1] - b[1]) < EPS
+  const [lo, hi] = span(a, b, alongX)
+  const moved = moveEdge(points, i, line)
+  const grown = area(moved) - area(points)
+  const strip = Math.abs(line - (alongX ? a[1] : a[0])) * (hi - lo)
+  return isRectilinear(moved) && Math.abs(grown - strip) < 1e-3 ? moved : null
+}
+
+const span = (a: Vec2, b: Vec2, alongX: boolean): [number, number] =>
+  alongX ? [Math.min(a[0], b[0]), Math.max(a[0], b[0])] : [Math.min(a[1], b[1]), Math.max(a[1], b[1])]
+
+/** A rectangular room with its far sides moved so it is `width` across x and `depth` along z. */
+export function resized(points: Vec2[], width: number, depth: number): Vec2[] {
+  const [x0, z0] = boundsOf(points)
+  return rectFrom([x0, z0], [round(x0 + width), round(z0 + depth)])
 }
 
 /** Rooms that overlap another room (sharing an edge is fine; sharing floor is not). */

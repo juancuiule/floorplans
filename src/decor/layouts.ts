@@ -1,6 +1,9 @@
 import { create } from 'zustand'
-import { createLayout, deleteLayout, listLayouts, renameLayout, type LayoutInfo } from './api'
+import { createLayout, deleteLayout, listLayouts, readOtherPlan, renameLayout, type LayoutInfo } from './api'
+import type { DecorFile } from '../model/decor'
+import type { Plan } from '../model/plan'
 import { serialize } from './layoutFile'
+import { fitLayout } from './transfer'
 import { launch } from '../project/launch'
 import { plan } from '../project/plan'
 import { committedItems, flushSave, MAIN_SLUG, useDecor } from './store'
@@ -16,6 +19,8 @@ interface LayoutsState {
   refresh: () => Promise<void>
   /** Saves the editor's current state as a new layout and switches to it. */
   saveAs: (name: string) => Promise<void>
+  /** Copies another plan's current layout, fitted to this plan, as a new layout, and switches to it. */
+  bringFrom: (plan: string, name: string) => Promise<void>
   rename: (slug: string | null, name: string) => Promise<void>
   remove: (slug: string | null) => Promise<void>
 }
@@ -36,6 +41,18 @@ export const useLayouts = create<LayoutsState>((set, get) => ({
     try {
       // Group names travel with the copy; the server writes the new name.
       const data = JSON.parse(serialize(committedItems(d), d.finishes, '', d.groupNames))
+      const { slug } = await createLayout(name, data)
+      await useDecor.getState().switchLayout(slug)
+      await get().refresh()
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) })
+    }
+  },
+  bringFrom: async (other, name) => {
+    await flushSave()
+    try {
+      const read = await readOtherPlan(other)
+      const data = fitLayout(read.layout as DecorFile, read.plan as Plan, plan)
       const { slug } = await createLayout(name, data)
       await useDecor.getState().switchLayout(slug)
       await get().refresh()

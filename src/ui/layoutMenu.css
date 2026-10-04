@@ -310,3 +310,29 @@
   border-color: var(--focus);
   box-shadow: 0 0 0 1px var(--focus);
 }
+
+/* Layouts of the space's other plans, to bring in (src/decor/transfer.ts). */
+.layout-other {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+.layout-other h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.layout-other ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.layout-other .btn {
+  width: 100%;
+  justify-content: flex-start;
+}

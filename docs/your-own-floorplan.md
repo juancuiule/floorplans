@@ -41,13 +41,15 @@ Walls are drawn by their **centerline**, so a 20 cm wall whose inner face is at 
 **Draw a floor plan** on your space's page opens the editor. It works like the 3D editor: tools in the toolbar, settings in the panel on the right.
 
 1. **Add the reference image** (panel → *Reference image*): a picture of your floor plan. It shows under the drawing, half transparent. Click *Set scale*, click both ends of a length you know on it (a dimension line, a wall you measured) and type the length: now the drawing and the image share a scale. *Move* drags the image into place.
-2. **Trace the rooms.** With *Room* (`R`), click each corner of a room on its wall **centerlines**; every edge runs straight across or up the plan, so L- and U-shaped rooms are a few more clicks. Close it on the first corner (or `Enter`). For a rectangle, just drag. Corners snap to other rooms' corners, so neighbors share their wall. Pick each room's kind in the panel: it decides its floor, and a balcony gets railings instead of walls.
-3. **Walls** are worked out for you and drawn as you go: 20 cm outer walls, 10 cm partitions between rooms (which a layout can later take out, Room tab → *Walls*).
-4. **Doors and windows.** *Door*, *Window*, *Glass door* (floor to ceiling, e.g. onto the balcony) or *Opening* (a passage without a door): click a wall. Put the front door in the wall at the entry end: walk mode starts there.
-5. **Fittings.** Toilet, basin, shower, counter, sink and cooktop: pick one, click to place it, `R` to turn it.
+2. **Trace the rooms** along the **inside of their walls**, as the picture shows them. With *Room* (`R`), click each corner; every edge runs straight across or up the plan, so L- and U-shaped rooms are a few more clicks. Close it on the first corner (or `Enter`). For a rectangle, just drag. Pick each room's kind in the panel: it decides its floor, and a balcony gets railings instead of walls.
+3. **Walls** are worked out for you and drawn as you go. Outer walls (20 cm) stand outside the rooms you traced. Two rooms traced on either side of a wall leave a gap as wide as the wall (up to 35 cm): it closes on its own, the two rooms meeting in its middle, where a 10 cm partition goes (a layout can take it out later, Room tab → *Walls*). Room sizes and areas are measured between the walls, like a listing's: if the picture says 4.70 × 3.00, so should the drawing. Type a rectangle's exact size in the panel.
+4. **Doors and windows.** *Door*, *Window*, *Glass door* (floor to ceiling, e.g. onto the balcony) or *Opening* (a passage without a door): click a wall, and set its width in the panel. Doors are drawn with their swing and open into the room they close (inward at the front door, into the smaller room between two); the panel flips the hinge or the way it opens. Put the front door in the wall at the entry end: walk mode starts there.
+5. **Fittings.** Toilet, basin, shower, counter, sink and cooktop: pick one, click to place it, `R` to turn it, and set its width and depth in the panel (a counter as long as yours).
 6. Set the **city** (for the sun) and the **ceiling height**, and **Create and open in 3D**.
 
 ![Setting the reference image's scale from its 6.00 m dimension](images/floorplan-calibrate.jpg)
+
+![The Monoambiente traced from a listing's plan: rooms, doors with their swing, fittings](images/floorplan-traced-monoambiente.jpg)
 
 With *Select*, drag a room to move it, a corner to reshape it (its neighbors follow so corners stay square), or the dot on an edge to push or pull that wall. The panel lists what is missing or wrong (overlapping rooms, no door yet) before you save. *Edit floor plan* on the space's page opens it again, reference image included. Walls must run along the plan's axes ([ADR 0011](adr/0011-right-angled-rooms.md)); for angled walls, columns or a dropped ceiling, write the plan by hand.
 
@@ -105,6 +107,7 @@ Upload images in the Artwork tab, or drop them anywhere on the panel. They go to
 The Furniture, Plants and Lights tabs place pieces from the catalog, which every space shares. Every change is saved to the open layout, so you can:
 
 - keep several layouts (the menu at the top of the panel) and flip between two with `B`,
+- bring in the layout of another plan in the space (same menu, *From another plan*): for an apartment drawn again, its furniture, artwork and paint come along, fitted to the new walls ([ADR 0012](adr/0012-traced-rooms.md)),
 - try taking a partition out (Room tab → *Walls*) and compare it with the original,
 - edit a layout file by hand (`storage/spaces/<space>/layouts/<plan>/decor*.json`), or ask Claude Code to ("move the sofa 20 cm toward the window"), and watch the app update live.
 
@@ -140,7 +143,7 @@ What's still missing:
 
 - **Accounts**: an owner for each space, sign-in, and links that can only view. Today a link gives full access.
 - **A database and object storage**: the storage module (`server/storage.ts`) is the seam. Files are fine for a few people; many need concurrency control (today the last write wins) and backups.
-- **Richer drawing**: angled walls, columns and beams, dropped ceilings, tracing over an image of the floor plan, or a first pass from a photo of one.
+- **Richer drawing**: angled walls, columns and beams, dropped ceilings, or a first pass from a photo of a floor plan.
 - **Catalog as data**: furniture specs (size, options, finishes) could live in a database, but the geometry is code; a request flow could produce a pull request, or pieces could be described in a small declarative format.
 - **Some assumptions from the original flat** still live in the code: the four floor zones in the Room tab (`src/model/finishes.ts`), the bathroom tile and shower options, and a balcony in the sun shadows (`src/scene/SunOccluders.tsx`). A plan without a bathroom or balcony works, but those options still show.
 - **Asset rights and limits**: uploads need storage quotas and a way to report or remove images.

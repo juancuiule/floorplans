@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import type { Plan } from '../../model/plan'
 import { area, boundsOf, edgesOf, rectangles } from '../../model/polygon'
 import {
+  clearArea,
+  doorSwing,
   FITTINGS,
+  fittingSize,
   ROOM_KINDS,
   type FittingType,
   type OpeningKind,
@@ -11,7 +14,9 @@ import {
 } from '../../model/sketch'
 import type { Rect, Vec2 } from '../../model/types'
 import {
+  closeGaps,
   closeOutline,
+  EDGE_SNAP,
   edgeLines,
   extent,
   freshId,
@@ -27,6 +32,7 @@ import {
   snapPoint,
   squareTo,
   toGrid,
+  TRACE_SNAP,
   type Selection,
   type Tool,
 } from './editing'
@@ -91,6 +97,8 @@ export function FloorplanCanvas(props: Props) {
   /** The first end of a length being measured on the reference image. */
   const [measureFrom, setMeasureFrom] = useState<Vec2 | null>(null)
   const bad = new Set(overlapping(sketch.rooms))
+  // Tracing over an image, edges pull less: the image's lines are what to follow.
+  const reach = sketch.reference && !sketch.reference.hidden ? TRACE_SNAP : EDGE_SNAP
 
   // Fit on request (the toolbar's Fit button).
   const sketchRef = useRef(sketch)
@@ -98,7 +106,7 @@ export function FloorplanCanvas(props: Props) {
     sketchRef.current = sketch
   })
   useEffect(() => {
-    if (fitNonce) setView(framed(sketchRef.current))
+    setView(framed(sketchRef.current, svg.current))
   }, [fitNonce])
 
   // Changing tools drops what was half done.
@@ -138,7 +146,9 @@ export function FloorplanCanvas(props: Props) {
   const addRoom = (points: Vec2[]) => {
     const id = freshId('room')
     const kind = sketch.rooms.length === 0 ? 'living' : 'bedroom'
-    onChange({ ...sketch, rooms: [...sketch.rooms, { id, name: '', kind, points }] }, true)
+    // Traced along the inside of the walls, it meets its neighbors halfway across the wall between them.
+    const rooms = closeGaps([...sketch.rooms, { id, name: '', kind, points }], id)
+    onChange({ ...sketch, rooms }, true)
     onSelect({ kind: 'room', id })
   }
 
@@ -172,7 +182,7 @@ export function FloorplanCanvas(props: Props) {
 
   /** Where the next corner goes while drawing: squared to the last one, snapped to other rooms. */
   const nextCorner = (p: Vec2): Vec2 => {
-    const s = snapPoint(p, edgeLines(sketch.rooms))
+    const s = snapPoint(p, edgeLines(sketch.rooms), reach)
     if (!outline.length) return s
     const sq = squareTo(outline[outline.length - 1], s)
     // Near the first corner's lines? Line up with them, so the outline closes square.
@@ -239,7 +249,7 @@ export function FloorplanCanvas(props: Props) {
     }
     if (drag.type === 'draw') {
       // Dragging (rather than clicking) draws a rectangle in one go.
-      const to = snapPoint(p, edgeLines(sketch.rooms))
+      const to = snapPoint(p, edgeLines(sketch.rooms), reach)
       const moved = drag.moved || Math.hypot(to[0] - drag.from[0], to[1] - drag.from[1]) >= 0.3
       return setDrag({ ...drag, to, moved: moved && outline.length === 0 })
     }
@@ -264,14 +274,14 @@ export function FloorplanCanvas(props: Props) {
       return onChange(moveRoom(drag.start, drag.id, dx, dz), false)
     }
     if (drag.type === 'corner') {
-      const to = snapPoint(p, edgeLines(sketch.rooms, drag.id))
+      const to = snapPoint(p, edgeLines(sketch.rooms, drag.id), reach)
       return onChange(setPoints(drag.id, moveCorner(drag.start, drag.i, to)), false)
     }
     if (drag.type === 'edge') {
       const [a, b] = [drag.start[drag.i], drag.start[(drag.i + 1) % drag.start.length]]
       const lines = edgeLines(sketch.rooms, drag.id)
       const alongX = Math.abs(a[1] - b[1]) < 1e-6
-      const line = alongX ? snap(p[1], lines.z) : snap(p[0], lines.x)
+      const line = alongX ? snap(p[1], lines.z, reach) : snap(p[0], lines.x, reach)
       return onChange(setPoints(drag.id, moveEdge(drag.start, drag.i, line)), false)
     }
     if (drag.type === 'fitting') {
@@ -296,6 +306,8 @@ export function FloorplanCanvas(props: Props) {
           finishOutline()
         else if (!last || drag.from[0] !== last[0] || drag.from[1] !== last[1]) setOutline([...outline, drag.from])
       }
+    } else if (drag?.type === 'corner' || drag?.type === 'edge') {
+      onChange({ ...sketch, rooms: closeGaps(sketch.rooms, drag.id) }, true)
     } else if (drag && drag.type !== 'pan') onChange(sketch, true)
     setDrag(null)
   }
@@ -320,6 +332,17 @@ export function FloorplanCanvas(props: Props) {
     (preview?.shell.walls ?? []).flatMap((w) =>
       (w.openings ?? []).map((o) => [o.id, { wall: w, opening: o }] as const),
     ),
+  )
+  // Rectangular rooms are labeled with their clear size, between the walls, as a listing's plan gives it.
+  const inner = new Map(
+    sketch.rooms
+      .filter((r) => r.points.length === 4)
+      .flatMap((r) => {
+        const piece = preview?.shell.rooms.find((p) => p.id === r.id)
+        if (!piece) return []
+        const [x0, z0, x1, z1] = piece.rect
+        return [[r.id, [x1 - x0, z1 - z0]] as const]
+      }),
   )
   const selectedRoom = selection?.kind === 'room' ? sketch.rooms.find((r) => r.id === selection.id) : undefined
 
@@ -368,7 +391,6 @@ export function FloorplanCanvas(props: Props) {
           // Labels sit in the room's largest rectangle: in an L, not in the notch.
           const [x0, z0, x1, z1] = rectangles(r.points)[0] ?? boundsOf(r.points)
           const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2]
-          const [bx0, bz0, bx1, bz1] = boundsOf(r.points)
           return (
             <g key={r.id} className="fp-room">
               <polygon
@@ -383,9 +405,9 @@ export function FloorplanCanvas(props: Props) {
                 {r.name || ROOM_KINDS.find((k) => k.id === r.kind)!.label}
               </text>
               <text x={cx} y={cz + 9 * px} fontSize={10.5 * px} textAnchor="middle" className="fp-dims">
-                {r.points.length === 4
-                  ? `${(bx1 - bx0).toFixed(2)} × ${(bz1 - bz0).toFixed(2)} m`
-                  : `${area(r.points).toFixed(1)} m²`}
+                {inner.has(r.id)
+                  ? `${inner.get(r.id)![0].toFixed(2)} × ${inner.get(r.id)![1].toFixed(2)} m`
+                  : `${(preview ? clearArea(preview, r) : area(r.points)).toFixed(1)} m²`}
               </text>
             </g>
           )
@@ -439,6 +461,15 @@ export function FloorplanCanvas(props: Props) {
               onPointerDown={(e) => startDrag(e, { type: 'opening', id: o.id }, { kind: 'opening', id: o.id })}
             >
               <line x1={ax} y1={az} x2={bx} y2={bz} stroke="#fbfaf7" strokeWidth={wall.thickness + px} />
+              {o.kind === 'door' && (
+                <DoorSwing
+                  a={[ax, az]}
+                  b={[bx, bz]}
+                  swing={doorSwing(o, sketch.rooms, !vertical)}
+                  px={px}
+                  color={selected ? 'var(--focus)' : OPENING_COLOR.door}
+                />
+              )}
               <line
                 x1={ax}
                 y1={az}
@@ -453,7 +484,7 @@ export function FloorplanCanvas(props: Props) {
         })}
 
         {sketch.fittings.map((f) => {
-          const [w, , d] = FITTINGS[f.type].size
+          const [w, , d] = fittingSize(f)
           const selected = selection?.kind === 'fitting' && selection.id === f.id
           return (
             <g
@@ -606,11 +637,64 @@ export function FloorplanCanvas(props: Props) {
   )
 }
 
+/**
+ * A door as plans draw it: the leaf standing open at a right angle from its
+ * hinge, and the arc its edge sweeps. `a` and `b` are the opening's ends, a
+ * the lower one.
+ */
+function DoorSwing({
+  a,
+  b,
+  swing,
+  px,
+  color,
+}: {
+  a: Vec2
+  b: Vec2
+  swing: { hinge: 'lo' | 'hi'; opens: 1 | -1 }
+  px: number
+  color: string
+}) {
+  const [hinge, free] = swing.hinge === 'lo' ? [a, b] : [b, a]
+  const w = Math.hypot(b[0] - a[0], b[1] - a[1])
+  const alongX = Math.abs(a[1] - b[1]) < 1e-6
+  const tip: Vec2 = alongX ? [hinge[0], hinge[1] + swing.opens * w] : [hinge[0] + swing.opens * w, hinge[1]]
+  // The arc runs from the free jamb to the open leaf's tip; which way round depends on the corner it turns.
+  const cross = (free[0] - hinge[0]) * (tip[1] - hinge[1]) - (free[1] - hinge[1]) * (tip[0] - hinge[0])
+  return (
+    <g pointerEvents="none">
+      <line x1={hinge[0]} y1={hinge[1]} x2={tip[0]} y2={tip[1]} stroke={color} strokeWidth={2 * px} />
+      <path
+        d={`M ${free[0]} ${free[1]} A ${w} ${w} 0 0 ${cross > 0 ? 1 : 0} ${tip[0]} ${tip[1]}`}
+        fill="none"
+        stroke={color}
+        strokeWidth={px}
+        strokeDasharray={`${3 * px} ${2 * px}`}
+      />
+    </g>
+  )
+}
+
 /** The view rectangle that frames a sketch with some room around it. */
-function framed(sketch: Sketch): Rect {
+function framed(sketch: Sketch, el?: SVGSVGElement | null): Rect {
   const [x0, z0, x1, z1] = extent(sketch)
-  const m = 1.5
-  return [x0 - m, z0 - m, Math.max(x1 - x0 + 2 * m, 6), Math.max(z1 - z0 + 2 * m, 4)]
+  const box = el?.getBoundingClientRect()
+  if (!box?.width) {
+    const m = 1.5
+    return [x0 - m, z0 - m, Math.max(x1 - x0 + 2 * m, 6), Math.max(z1 - z0 + 2 * m, 4)]
+  }
+  // Frame it in what the toolbar, the panel and the hint leave visible, in the svg's own proportions.
+  const panel = document.querySelector('.fp-panel')?.getBoundingClientRect()
+  const free = { left: 32, top: 80, right: (panel ? panel.left - box.left : box.width) - 32, bottom: box.height - 70 }
+  const [w, h] = [Math.max(x1 - x0, 4) + 1, Math.max(z1 - z0, 3) + 1]
+  const k = Math.max(w / (free.right - free.left), h / (free.bottom - free.top)) // meters a pixel
+  const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2]
+  return [
+    cx - ((free.left + free.right) / 2) * k,
+    cz - ((free.top + free.bottom) / 2) * k,
+    box.width * k,
+    box.height * k,
+  ]
 }
 
 /** The shift that lands one of `coords` on a snap line, or the grid shift. */

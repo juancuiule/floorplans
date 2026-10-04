@@ -4,6 +4,7 @@ import type { ReferenceImage, SketchRoom } from '../../src/model/sketch'
 import type { Vec2 } from '../../src/model/types'
 import {
   calibrated,
+  closeGaps,
   closeOutline,
   edgeLines,
   moveCorner,
@@ -12,6 +13,7 @@ import {
   overlapping,
   rectFrom,
   referenceRect,
+  resized,
   roomAt,
   snap,
   squareTo,
@@ -137,5 +139,72 @@ describe('floor plan editing', () => {
     expect(out.origin[1]).toBeCloseTo(-1.5)
     expect(referenceRect(out)[2]).toBeCloseTo(23.5)
     expect(calibrated(ref, [1, 1], [1, 1], 5)).toBe(ref)
+  })
+})
+
+describe('closeGaps', () => {
+  const pointsOf = (id: string, rooms: SketchRoom[]) => rooms.find((r) => r.id === id)!.points
+
+  it('meets a neighbor traced across a wall halfway, on the wall’s centerline', () => {
+    // Traced along the inside of a 10 cm wall: 2.0 and 2.1.
+    const rooms = closeGaps([room('a', [0, 0, 2, 3]), room('b', [2.1, 0, 5, 3])], 'b')
+    expect(pointsOf('a', rooms)).toEqual(rectPoints([0, 0, 2.05, 3]))
+    expect(pointsOf('b', rooms)).toEqual(rectPoints([2.05, 0, 5, 3]))
+  })
+
+  it('leaves a gap wider than a wall, and rooms that already touch', () => {
+    const apart = [room('a', [0, 0, 2, 3]), room('b', [2.5, 0, 5, 3])]
+    expect(closeGaps(apart, 'b')).toEqual(apart)
+    const touching = [room('a', [0, 0, 2, 3]), room('b', [2, 0, 5, 3])]
+    expect(closeGaps(touching, 'b')).toEqual(touching)
+  })
+
+  it('closes every side an L shares with its neighbor: a kitchen around a bathroom’s niche', () => {
+    const l = (id: string, points: Vec2[]): SketchRoom => ({ id, name: '', kind: 'bath', points })
+    const rooms = closeGaps(
+      [
+        l('bath', [
+          [0, 0],
+          [2.1, 0],
+          [2.1, 0.7],
+          [1.25, 0.7],
+          [1.25, 1.3],
+          [0, 1.3],
+        ]),
+        l('kitchen', [
+          [0, 1.4],
+          [1.35, 1.4],
+          [1.35, 0.8],
+          [2.1, 0.8],
+          [2.1, 3],
+          [0, 3],
+        ]),
+      ],
+      'kitchen',
+    )
+    // Three walls, each on the middle line of its gap: z 1.35, x 1.3, z 0.75.
+    expect(pointsOf('kitchen', rooms)).toEqual([
+      [0, 1.35],
+      [1.3, 1.35],
+      [1.3, 0.75],
+      [2.1, 0.75],
+      [2.1, 3],
+      [0, 3],
+    ])
+    expect(pointsOf('bath', rooms)).toEqual([
+      [0, 0],
+      [2.1, 0],
+      [2.1, 0.75],
+      [1.3, 0.75],
+      [1.3, 1.35],
+      [0, 1.35],
+    ])
+    expect(overlapping(rooms)).toEqual([])
+  })
+})
+
+describe('resized', () => {
+  it('moves the far sides of a rectangle to the size typed in', () => {
+    expect(resized(rectPoints([1, 2, 3, 4]), 4.7, 3)).toEqual(rectPoints([1, 2, 5.7, 5]))
   })
 })

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { getSpace, type PlanSummary } from '../decor/api'
 import { useLayouts, type LayoutInfo } from '../decor/layouts'
+import { launch } from '../project/launch'
 import { MAIN_NAME } from '../model/layoutNames'
 import { plan } from '../project/plan'
 import { MAIN_SLUG, useDecor } from '../decor/store'
@@ -260,6 +262,7 @@ function LayoutsPopover({ onClose }: { onClose: () => void }) {
           )
         })}
       </ul>
+      <OtherPlans onDone={onClose} run={run} />
       <div className="layout-pop-foot">
         <NameForm
           label="Save a copy as"
@@ -274,6 +277,45 @@ function LayoutsPopover({ onClose }: { onClose: () => void }) {
           }
         />
       </div>
+    </div>
+  )
+}
+
+/**
+ * The space's other plans, whose layout can be brought over: for an apartment
+ * drawn again, its furniture, artwork and paint come along, fitted to the new walls.
+ */
+function OtherPlans({ onDone, run }: { onDone: () => void; run: (fn: () => Promise<void>) => Promise<void> }) {
+  const [plans, setPlans] = useState<PlanSummary[]>([])
+  useEffect(() => {
+    if (!launch.space) return
+    getSpace(launch.space).then(
+      (s) => setPlans(s.plans.filter((p) => p.id !== plan.id)),
+      () => setPlans([]),
+    )
+  }, [])
+  if (!plans.length) return null
+  return (
+    <div className="layout-other">
+      <h3>From another plan</h3>
+      <ul>
+        {plans.map((p) => (
+          <li key={p.id}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() =>
+                run(async () => {
+                  await useLayouts.getState().bringFrom(p.id, `From ${p.name}`)
+                  onDone()
+                })
+              }
+            >
+              <Icon name="layers" size={14} /> Bring in the layout of {p.name}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

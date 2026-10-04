@@ -79,7 +79,7 @@ test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) =>
       [0, 0],
     ])
       await clickAt(page, x, z)
-    await expect(page.locator('.fp-panel')).toContainText('25.0 m² · 6 corners')
+    await expect(page.locator('.fp-panel')).toContainText('25.0 m² between the walls · 6 corners')
     await drawRoom(page, [3.55, 3], [6, 5.05]) // snaps onto the L's edges
     await page.locator('.fp-panel').getByRole('radio', { name: 'Bedroom', exact: true }).click()
     await expect(page.locator('.fp-problems')).toContainText('There is no door yet')
@@ -144,5 +144,34 @@ test('a new space, a plan drawn from scratch, opened in 3D', async ({ page }) =>
     await expect(page.getByRole('link', { name: 'E2E home' })).toHaveCount(0)
   })
 
+  expect(errors).toEqual([])
+})
+
+test('a plan drawn again takes the furniture and artwork of the one it redraws', async ({ page }) => {
+  const errors = watchErrors(page)
+  // The e2e space holds the Monoambiente, furnished; draw its outline again as a new plan.
+  await page.goto(`${BASE_URL}/?space=e2e&edit=floorplan`)
+  await page.locator('.fp-panel .text-input').first().fill('Redrawn')
+  await tool(page, 'Room')
+  await drawRoom(page, [0, 0], [6.9, 3])
+  await tool(page, 'Door')
+  await clickAt(page, 0, 1.5)
+  await page.getByRole('button', { name: 'Create and open in 3D' }).click()
+  await page.waitForURL(/plan=redrawn/)
+  await page.waitForFunction(() => window.__decor?.getState().loaded, null, { timeout: 60000 })
+  expect(await page.evaluate(() => window.__decor.getState().items.length)).toBe(0)
+
+  await page.locator('.layout-trigger').click()
+  await page.getByRole('button', { name: 'Bring in the layout of Monoambiente' }).click()
+  await expect(page.getByTestId('layout-current')).toHaveText('From Monoambiente')
+  const { items, walls } = await page.evaluate(async () => ({
+    items: window.__decor.getState().items,
+    walls: (await import('/src/project/plan.ts')).plan.shell.walls.map((w) => w.id),
+  }))
+  expect(items.filter((i) => i.kind === 'artwork').length).toBeGreaterThan(10)
+  // Everything hung on a wall hangs on a wall of this plan.
+  expect(items.filter((i) => i.host && !walls.includes(i.host))).toEqual([])
+
+  await fetch(`${BASE_URL}/api/spaces/e2e/plans/redrawn`, { method: 'DELETE' })
   expect(errors).toEqual([])
 })

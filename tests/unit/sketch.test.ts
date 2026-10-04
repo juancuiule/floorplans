@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { rectPoints } from '../../src/model/polygon'
-import { emptySketch, planFromSketch, readSketch, type Sketch, type SketchRoom } from '../../src/model/sketch'
+import {
+  doorSwing,
+  emptySketch,
+  fittingSize,
+  planFromSketch,
+  readSketch,
+  type Sketch,
+  type SketchRoom,
+} from '../../src/model/sketch'
 import type { Wall } from '../../src/model/types'
 import { validatePlan } from '../../src/model/validate'
 
@@ -11,8 +19,80 @@ const room = (id: string, kind: SketchRoom['kind'], rect: [number, number, numbe
   kind,
   points: rectPoints(rect),
 })
-const sketch = (patch: Partial<Sketch>): Sketch => ({ ...emptySketch(), ...patch })
+/** A sketch drawn on wall centerlines, as before tracing (most tests here); `outside` tests set it. */
+const sketch = (patch: Partial<Sketch>): Sketch => ({ ...emptySketch(), outerWalls: 'centered', ...patch })
 const span = (w: Wall) => [w.a, w.b]
+
+describe('planFromSketch with outer walls outside the rooms (a traced plan)', () => {
+  const traced = (rooms: SketchRoom[]) => planFromSketch({ ...emptySketch(), rooms }, meta)
+
+  it('is how a new sketch draws', () => {
+    expect(emptySketch().outerWalls).toBe('outside')
+  })
+
+  it('stands the outer walls outside the room, which keeps all of its floor', () => {
+    const plan = traced([room('r', 'living', [0, 0, 4, 3])])
+    expect(validatePlan(plan)).toEqual([])
+    // The top wall: centered 10 cm outside, running past the side walls' outer faces.
+    expect(plan.shell.walls.map(span)).toContainEqual([
+      [-0.2, -0.1],
+      [4.2, -0.1],
+    ])
+    expect(plan.shell.rooms[0].rect).toEqual([0, 0, 4, 3])
+    expect(plan.shell.slab.rect).toEqual([-0.2, -0.2, 4.2, 3.2])
+  })
+
+  it('keeps partitions centered on the shared edge, and the room up to them', () => {
+    const plan = traced([room('a', 'living', [0, 0, 4, 3]), room('b', 'kitchen', [4, 0, 6, 3])])
+    expect(validatePlan(plan)).toEqual([])
+    expect(plan.shell.walls.filter((w) => w.kind === 'interior').map(span)).toEqual([
+      [
+        [4, 0],
+        [4, 3],
+      ],
+    ])
+    expect(plan.shell.rooms.map((r) => r.rect)).toEqual([
+      [0, 0, 3.95, 3],
+      [4.05, 0, 6, 3],
+    ])
+  })
+
+  it('centers the wall onto a balcony, which is a wall between two rooms', () => {
+    const plan = traced([room('a', 'living', [0, 0, 4, 3]), room('b', 'balcony', [4, 0, 5.5, 3])])
+    const facade = plan.shell.walls.find((w) => w.a[0] === 4 && w.b[0] === 4)!
+    expect(facade.kind).toBe('exterior')
+    // Its ends meet the outer walls, which stand outside the living room: centered 10 cm past its edges.
+    expect(span(facade)).toEqual([
+      [4, -0.2],
+      [4, 3.2],
+    ])
+    expect(plan.shell.rooms[0].rect).toEqual([0, 0, 3.9, 3])
+  })
+
+  it('closes an L’s inside corner without cutting into the room', () => {
+    const l = (points: [number, number][]): SketchRoom => ({ id: 'l', name: '', kind: 'living', points })
+    const plan = traced([
+      l([
+        [0, 0],
+        [6, 0],
+        [6, 3],
+        [3.5, 3],
+        [3.5, 5],
+        [0, 5],
+      ]),
+    ])
+    expect(validatePlan(plan)).toEqual([])
+    // Along the notch: the wall under it stops at the room's edge, x = 3.5; the one beside it at z = 3.
+    expect(plan.shell.walls.map(span)).toContainEqual([
+      [3.5, 3.1],
+      [6.2, 3.1],
+    ])
+    expect(plan.shell.walls.map(span)).toContainEqual([
+      [3.6, 3],
+      [3.6, 5.2],
+    ])
+  })
+})
 
 describe('planFromSketch', () => {
   it('turns one room into four exterior walls that close their corners, and a valid plan', () => {
@@ -152,7 +232,8 @@ describe('planFromSketch', () => {
       ['l', [0.1, 0.1, 3, 4.9], true],
       ['l-2', [3, 2.1, 5.9, 4.9], false],
     ])
-    expect(plan.shell.rooms[0].labelDims).toBe('24.0 m²')
+    // The label gives the floor between the walls: 2.9 × 4.8 + 2.9 × 2.8.
+    expect(plan.shell.rooms[0].labelDims).toBe('22.0 m²')
     expect(plan.shell.ceilings).toHaveLength(2)
   })
 
@@ -210,5 +291,54 @@ describe('planFromSketch', () => {
     }
     expect(readSketch(old).rooms[0].points).toEqual(rectPoints([0, 0, 4, 3]))
     expect(readSketch(old).version).toBe(2)
+  })
+})
+
+describe('doors and fittings in a drawn plan', () => {
+  const two = (openings: Sketch['openings']) =>
+    planFromSketch(
+      sketch({
+        rooms: [room('living', 'living', [0, 0, 4, 3]), room('bath', 'bath', [4, 0, 6, 2])],
+        openings,
+      }),
+      meta,
+    )
+  const leafOf = (plan: ReturnType<typeof two>, id: string) =>
+    plan.shell.walls.flatMap((w) => w.openings ?? []).find((o) => o.id === id)!.leaf!
+
+  it('opens a door into the room it closes: inward at the front door, into the smaller room between two', () => {
+    // A wall along z: its normal points to -x, so opening toward +x (into the bathroom) is swing -1.
+    expect(doorSwing({ id: 'd', kind: 'door', at: [4, 1], width: 0.8 }, two([]).sketch!.rooms, false)).toEqual({
+      hinge: 'lo',
+      opens: 1,
+    })
+    const plan = two([
+      { id: 'bath-door', kind: 'door', at: [4, 1], width: 0.8 },
+      { id: 'front', kind: 'door', at: [2, 3], width: 0.9 },
+    ])
+    expect(leafOf(plan, 'bath-door')).toMatchObject({ hinge: 'a', swing: -1 })
+    // The front door, in the wall along x at z = 3: into the flat is toward -z, against the normal (+z).
+    expect(leafOf(plan, 'front')).toMatchObject({ hinge: 'a', swing: -1 })
+  })
+
+  it('takes the hinge side and the way it opens from the sketch when set', () => {
+    const plan = two([{ id: 'd', kind: 'door', at: [4, 1], width: 0.8, hinge: 'hi', opens: -1 }])
+    expect(leafOf(plan, 'd')).toMatchObject({ hinge: 'b', swing: 1 })
+  })
+
+  it('sizes a fitting as drawn, or at its default size', () => {
+    const plan = planFromSketch(
+      sketch({
+        rooms: [room('k', 'kitchen', [0, 0, 3, 3])],
+        fittings: [
+          { id: 'counter', type: 'counter', at: [1, 2.7], rotation: 180, size: [1.45, 0.6] },
+          { id: 'toilet', type: 'toilet', at: [1, 1], rotation: 0 },
+        ],
+      }),
+      meta,
+    )
+    const size = (id: string) => plan.fixtures.find((f) => f.id === id)!.size
+    expect(size('counter')).toEqual([1.45, 0.9, 0.6])
+    expect(size('toilet')).toEqual(fittingSize({ id: 't', type: 'toilet', at: [0, 0], rotation: 0 }))
   })
 })

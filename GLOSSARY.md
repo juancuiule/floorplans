@@ -16,12 +16,16 @@ _Avoid_: data folder
 An example plan a new plan can start as a copy of, furnished but without artwork.
 
 **Sketch**:
-A floor plan as drawn in the editor: right-angled rooms on wall centerlines, openings and fittings by position, and the reference image. The plan is worked out from it.
+A floor plan as drawn in the editor: right-angled rooms traced to the inside of their outer walls, openings and fittings by position, and the reference image. The plan is worked out from it.
 _Avoid_: drawing, draft (a draft is a decor item being placed)
 
 **Reference image**:
 A picture of the floor plan shown under a sketch to trace, scaled by a known length.
 _Avoid_: background, underlay
+
+**Clear size**:
+A room's size between its walls, as a floor plan picture gives it; what the editor shows and takes typed in.
+_Avoid_: inner size, net size
 
 **Plan**:
 One apartment as data: its shell, fixtures, materials, location and the design rules that apply to it (which partitions can come out, which walls take an accent color).

@@ -3,8 +3,11 @@ import { createPlan, readPlan, uploadReference, writePlan } from '../../decor/ap
 import type { Plan } from '../../model/plan'
 import { area, boundsOf } from '../../model/polygon'
 import {
+  clearArea,
+  doorSwing,
   emptySketch,
   FITTINGS,
+  fittingSize,
   planFromSketch,
   readSketch,
   ROOM_KINDS,
@@ -13,12 +16,12 @@ import {
   type RoomKind,
   type Sketch,
 } from '../../model/sketch'
-import type { Vec2 } from '../../model/types'
+import type { Rect, Vec2 } from '../../model/types'
 import { validatePlan } from '../../model/validate'
 import { links } from '../../project/launch'
 import { Chips, Field, NumberInput, Section, Slider, Switch } from '../../ui/controls'
 import { Icon, type IconName } from '../../ui/icons'
-import { calibrated, OPENING_WIDTH, overlapping, type Selection, type Tool } from './editing'
+import { calibrated, OPENING_WIDTH, overlapping, resized, type Selection, type Tool } from './editing'
 import { FloorplanCanvas } from './FloorplanCanvas'
 import './floorplan.css'
 
@@ -360,9 +363,16 @@ export function FloorplanEditorPage({ space, plan: planId }: { space: string; pl
                   onChange={(kind) => patch('rooms', room.id, { kind })}
                 />
               </Field>
+              {room.points.length === 4 && (
+                <RoomSize
+                  points={room.points}
+                  inner={preview?.shell.rooms.find((p) => p.id === room.id)?.rect}
+                  onChange={(size) => patch('rooms', room.id, { points: resized(room.points, ...size) })}
+                />
+              )}
               <p className="note">
-                {area(room.points).toFixed(1)} m² · {room.points.length} corners, on wall centerlines. The kind picks
-                the floor; a balcony gets railings instead of walls.
+                {(preview ? clearArea(preview, room) : area(room.points)).toFixed(1)} m² between the walls ·{' '}
+                {room.points.length} corners. The kind picks the floor; a balcony gets railings instead of walls.
               </p>
               <div className="actions">
                 <button type="button" className="btn danger" onClick={deleteSelection} aria-keyshortcuts="Delete">
@@ -385,6 +395,30 @@ export function FloorplanEditorPage({ space, plan: planId }: { space: string; pl
                 />
               </Field>
               <p className="note">Drag it along its wall. New ones are {OPENING_WIDTH[opening.kind]} m wide.</p>
+              {opening.kind === 'door' && preview && (
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      const now = doorSwing(opening, sketch!.rooms, openingAlongX(preview, opening.id))
+                      patch('openings', opening.id, { hinge: now.hinge === 'lo' ? 'hi' : 'lo' })
+                    }}
+                  >
+                    Hinge on the other side
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      const now = doorSwing(opening, sketch!.rooms, openingAlongX(preview, opening.id))
+                      patch('openings', opening.id, { opens: now.opens === 1 ? -1 : 1 })
+                    }}
+                  >
+                    Open the other way
+                  </button>
+                </div>
+              )}
               <div className="actions">
                 <button type="button" className="btn danger" onClick={deleteSelection} aria-keyshortcuts="Delete">
                   <Icon name="trash" size={14} /> Delete
@@ -394,6 +428,28 @@ export function FloorplanEditorPage({ space, plan: planId }: { space: string; pl
           )}
           {fitting && (
             <Section title={FITTINGS[fitting.type].label}>
+              <Field label="Width">
+                <NumberInput
+                  name="fitting width"
+                  value={fittingSize(fitting)[0]}
+                  min={0.2}
+                  max={4}
+                  step={0.05}
+                  unit="m"
+                  onChange={(w) => patch('fittings', fitting.id, { size: [w, fittingSize(fitting)[2]] })}
+                />
+              </Field>
+              <Field label="Depth">
+                <NumberInput
+                  name="fitting depth"
+                  value={fittingSize(fitting)[2]}
+                  min={0.2}
+                  max={2}
+                  step={0.05}
+                  unit="m"
+                  onChange={(d) => patch('fittings', fitting.id, { size: [fittingSize(fitting)[0], d] })}
+                />
+              </Field>
               <p className="note">Drag to move it, R to turn it ({fitting.rotation}°).</p>
               <div className="actions">
                 <button
@@ -567,6 +623,60 @@ export function FloorplanEditorPage({ space, plan: planId }: { space: string; pl
       </div>
     </div>
   )
+}
+
+/**
+ * A rectangular room's width (x) and depth (z), typed in: its clear size
+ * between the walls, as a listing gives it. The far sides move; `onChange`
+ * gets the size on the drawing's lines (centerlines, or faces of outer walls).
+ */
+function RoomSize({
+  points,
+  inner,
+  onChange,
+}: {
+  points: Vec2[]
+  inner?: Rect
+  onChange: (size: [number, number]) => void
+}) {
+  const [x0, z0, x1, z1] = boundsOf(points)
+  const [i0, j0, i1, j1] = inner ?? [x0, z0, x1, z1]
+  const cm = (v: number) => Math.round(v * 100) / 100
+  // What the walls take off each way.
+  const [tw, td] = [x1 - x0 - (i1 - i0), z1 - z0 - (j1 - j0)]
+  const [w, d] = [cm(i1 - i0), cm(j1 - j0)]
+  return (
+    <>
+      <Field label="Width">
+        <NumberInput
+          name="room width"
+          value={w}
+          min={0.5}
+          max={30}
+          step={0.05}
+          unit="m"
+          onChange={(v) => onChange([cm(v + tw), cm(d + td)])}
+        />
+      </Field>
+      <Field label="Depth">
+        <NumberInput
+          name="room depth"
+          value={d}
+          min={0.5}
+          max={30}
+          step={0.05}
+          unit="m"
+          onChange={(v) => onChange([cm(w + tw), cm(v + td)])}
+        />
+      </Field>
+    </>
+  )
+}
+
+/** Whether an opening sits in a wall along x, in the plan the sketch makes. */
+function openingAlongX(plan: Plan, id: string): boolean {
+  const wall = plan.shell.walls.find((w) => w.openings?.some((o) => o.id === id))
+  return !!wall && wall.a[1] === wall.b[1]
 }
 
 /** An image's natural size in pixels. */
