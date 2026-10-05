@@ -22,6 +22,7 @@ import {
   freshId,
   moveCorner,
   moveEdge,
+  moveShared,
   OPENING_WIDTH,
   openingSpot,
   overlapping,
@@ -61,8 +62,8 @@ const OPENING_COLOR: Record<OpeningKind, string> = {
 type Drag =
   | { type: 'draw'; from: Vec2; to: Vec2; moved: boolean }
   | { type: 'move'; id: string; grab: Vec2; start: Sketch }
-  | { type: 'corner'; id: string; i: number; start: Vec2[] }
-  | { type: 'edge'; id: string; i: number; start: Vec2[] }
+  | { type: 'corner'; id: string; i: number; start: Vec2[]; base: Sketch }
+  | { type: 'edge'; id: string; i: number; start: Vec2[]; base: Sketch }
   | { type: 'fitting'; id: string; grab: Vec2 }
   | { type: 'opening'; id: string }
   | { type: 'reference'; grab: Vec2; origin: Vec2 }
@@ -273,16 +274,23 @@ export function FloorplanCanvas(props: Props) {
       )
       return onChange(moveRoom(drag.start, drag.id, dx, dz), false)
     }
-    if (drag.type === 'corner') {
-      const to = snapPoint(p, edgeLines(sketch.rooms, drag.id), reach)
-      return onChange(setPoints(drag.id, moveCorner(drag.start, drag.i, to)), false)
-    }
-    if (drag.type === 'edge') {
-      const [a, b] = [drag.start[drag.i], drag.start[(drag.i + 1) % drag.start.length]]
-      const lines = edgeLines(sketch.rooms, drag.id)
-      const alongX = Math.abs(a[1] - b[1]) < 1e-6
-      const line = alongX ? snap(p[1], lines.z, reach) : snap(p[0], lines.x, reach)
-      return onChange(setPoints(drag.id, moveEdge(drag.start, drag.i, line)), false)
+    if (drag.type === 'corner' || drag.type === 'edge') {
+      const lines = edgeLines(drag.base.rooms, drag.id)
+      let points: Vec2[]
+      if (drag.type === 'corner') points = moveCorner(drag.start, drag.i, snapPoint(p, lines, reach))
+      else {
+        const [a, b] = [drag.start[drag.i], drag.start[(drag.i + 1) % drag.start.length]]
+        const alongX = Math.abs(a[1] - b[1]) < 1e-6
+        points = moveEdge(drag.start, drag.i, alongX ? snap(p[1], lines.z, reach) : snap(p[0], lines.x, reach))
+      }
+      // The rooms on the other side of a wall move with it; Alt moves this room alone.
+      const base = drag.base
+      return onChange(
+        e.altKey
+          ? setPoints(drag.id, points, base)
+          : { ...base, ...moveShared(base.rooms, base.openings, drag.id, points) },
+        false,
+      )
     }
     if (drag.type === 'fitting') {
       const to: Vec2 = [toGrid(p[0] - drag.grab[0]), toGrid(p[1] - drag.grab[1])]
@@ -388,6 +396,11 @@ export function FloorplanCanvas(props: Props) {
 
         {sketch.rooms.map((r) => {
           const selected = selectedRoom?.id === r.id
+          // A neighbor carried along by the wall being dragged.
+          const following =
+            (drag?.type === 'corner' || drag?.type === 'edge') &&
+            r.id !== drag.id &&
+            drag.base.rooms.find((b) => b.id === r.id)?.points !== r.points
           // Labels sit in the room's largest rectangle: in an L, not in the notch.
           const [x0, z0, x1, z1] = rectangles(r.points)[0] ?? boundsOf(r.points)
           const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2]
@@ -397,8 +410,8 @@ export function FloorplanCanvas(props: Props) {
                 points={r.points.map((q) => q.join(',')).join(' ')}
                 fill={bad.has(r.id) ? '#f6d4cf' : KIND_FILL[r.kind]}
                 fillOpacity={ref && !ref.hidden ? 0.6 : 1}
-                stroke={selected ? 'var(--focus)' : 'rgb(43 41 37 / 0.3)'}
-                strokeWidth={(selected ? 2 : 1) * px}
+                stroke={selected || following ? 'var(--focus)' : 'rgb(43 41 37 / 0.3)'}
+                strokeWidth={(selected ? 2 : following ? 1.5 : 1) * px}
                 strokeDasharray={selected ? undefined : `${4 * px} ${3 * px}`}
               />
               <text x={cx} y={cz - 7 * px} fontSize={12 * px} textAnchor="middle" className="fp-label">
@@ -534,7 +547,11 @@ export function FloorplanCanvas(props: Props) {
                 r={5 * px}
                 strokeWidth={1.5 * px}
                 onPointerDown={(e) =>
-                  startDrag(e, { type: 'edge', id: selectedRoom.id, i, start: selectedRoom.points }, selection)
+                  startDrag(
+                    e,
+                    { type: 'edge', id: selectedRoom.id, i, start: selectedRoom.points, base: sketch },
+                    selection,
+                  )
                 }
               />
             ))}
@@ -548,7 +565,11 @@ export function FloorplanCanvas(props: Props) {
                 height={10 * px}
                 strokeWidth={1.5 * px}
                 onPointerDown={(e) =>
-                  startDrag(e, { type: 'corner', id: selectedRoom.id, i, start: selectedRoom.points }, selection)
+                  startDrag(
+                    e,
+                    { type: 'corner', id: selectedRoom.id, i, start: selectedRoom.points, base: sketch },
+                    selection,
+                  )
                 }
               />
             ))}

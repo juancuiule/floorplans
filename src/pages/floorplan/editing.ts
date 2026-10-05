@@ -1,5 +1,5 @@
 import { area, boundsOf, contains, edgesOf, isRectilinear, overlaps, simplify } from '../../model/polygon'
-import type { OpeningKind, ReferenceImage, Sketch, SketchRoom } from '../../model/sketch'
+import type { OpeningKind, ReferenceImage, Sketch, SketchOpening, SketchRoom } from '../../model/sketch'
 import type { Rect, Vec2 } from '../../model/types'
 
 // The floor plan editor's geometry: snapping, drawing and reshaping right-angled
@@ -187,6 +187,73 @@ export function resized(points: Vec2[], width: number, depth: number): Vec2[] {
   const [x0, z0] = boundsOf(points)
   return rectFrom([x0, z0], [round(x0 + width), round(z0 + depth)])
 }
+
+/**
+ * Room `id` reshaped to `points` (by moving an edge or a corner), with the
+ * walls it shares: every other room edge that lay along a moved edge, over
+ * part of its length, moves with it, and so on through the rooms beyond, so
+ * neighbors stay against each other. Doors and windows on a moved wall go
+ * with it. A neighbor that would fold up (an edge shorter than 5 cm) stays put.
+ */
+export function moveShared(
+  rooms: SketchRoom[],
+  openings: SketchOpening[],
+  id: string,
+  points: Vec2[],
+): { rooms: SketchRoom[]; openings: SketchOpening[] } {
+  const self = rooms.find((r) => r.id === id)
+  if (!self) return { rooms, openings }
+  /** A wall line that moved: edges along x at z = line (or along z at x = line), over [lo, hi], now at `to`. */
+  const moves: { alongX: boolean; line: number; lo: number; hi: number; to: number }[] = []
+  const record = (before: Vec2[], after: Vec2[]) =>
+    edgesOf(before).forEach(([a, b], i) => {
+      const alongX = Math.abs(a[1] - b[1]) < EPS
+      const [line, to] = alongX ? [a[1], after[i][1]] : [a[0], after[i][0]]
+      if (Math.abs(to - line) > EPS) moves.push({ alongX, line, to, ...spanOf(a, b, alongX) })
+    })
+  record(self.points, points)
+  const moved = new Map<string, Vec2[]>([[id, points]])
+  for (let grew = true; grew;) {
+    grew = false
+    for (const r of rooms) {
+      if (moved.has(r.id)) continue
+      let pts = r.points
+      edgesOf(r.points).forEach(([a, b], j) => {
+        const alongX = Math.abs(a[1] - b[1]) < EPS
+        const line = alongX ? a[1] : a[0]
+        const { lo, hi } = spanOf(a, b, alongX)
+        const m = moves.find(
+          (m) => m.alongX === alongX && Math.abs(m.line - line) < EPS && Math.min(hi, m.hi) - Math.max(lo, m.lo) > EPS,
+        )
+        if (m) pts = moveEdge(pts, j, m.to)
+      })
+      if (pts === r.points || !sound(pts)) continue
+      moved.set(r.id, pts)
+      record(r.points, pts)
+      grew = true
+    }
+  }
+  return {
+    rooms: rooms.map((r) => (moved.has(r.id) ? { ...r, points: moved.get(r.id)! } : r)),
+    openings: openings.map((o) => {
+      const m = moves.find((m) => {
+        const [across, along] = m.alongX ? [o.at[1], o.at[0]] : [o.at[0], o.at[1]]
+        return Math.abs(across - m.line) < EPS && along >= m.lo - EPS && along <= m.hi + EPS
+      })
+      if (!m) return o
+      return { ...o, at: (m.alongX ? [o.at[0], m.to] : [m.to, o.at[1]]) as Vec2 }
+    }),
+  }
+}
+
+const spanOf = (a: Vec2, b: Vec2, alongX: boolean) => {
+  const [lo, hi] = span(a, b, alongX)
+  return { lo, hi }
+}
+
+/** Still a room: square corners, no edge folded to (almost) nothing. */
+const sound = (points: Vec2[]) =>
+  isRectilinear(points) && edgesOf(points).every(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]) >= 0.05)
 
 /** Rooms that overlap another room (sharing an edge is fine; sharing floor is not). */
 export function overlapping(rooms: SketchRoom[]): string[] {

@@ -9,6 +9,7 @@ import {
   edgeLines,
   moveCorner,
   moveEdge,
+  moveShared,
   openingSpot,
   overlapping,
   rectFrom,
@@ -206,5 +207,39 @@ describe('closeGaps', () => {
 describe('resized', () => {
   it('moves the far sides of a rectangle to the size typed in', () => {
     expect(resized(rectPoints([1, 2, 3, 4]), 4.7, 3)).toEqual(rectPoints([1, 2, 5.7, 5]))
+  })
+})
+
+describe('moveShared', () => {
+  const pts = (rooms: SketchRoom[], id: string) => rooms.find((r) => r.id === id)!.points
+  // A living room with a bathroom and a kitchen side by side against its right wall.
+  const rooms = [room('living', [0, 0, 4, 3]), room('bath', [4, 0, 6, 1.5]), room('kitchen', [4, 1.5, 6, 3])]
+  const door = { id: 'd', kind: 'door' as const, at: [4, 0.75] as Vec2, width: 0.8 }
+
+  it('moves the rooms on the other side of a wall with it, and the doors in it', () => {
+    // The living room's right edge (index 1) pushed from x 4 to 4.5.
+    const out = moveShared(rooms, [door], 'living', moveEdge(pts(rooms, 'living'), 1, 4.5))
+    expect(pts(out.rooms, 'bath')).toEqual(rectPoints([4.5, 0, 6, 1.5]))
+    expect(pts(out.rooms, 'kitchen')).toEqual(rectPoints([4.5, 1.5, 6, 3]))
+    expect(out.openings[0].at).toEqual([4.5, 0.75])
+  })
+
+  it('leaves rooms that only meet the edge end to end, or at a corner', () => {
+    // The bathroom's top edge is on the same line as the living room's, but they only meet at x = 4.
+    const out = moveShared(rooms, [], 'bath', moveEdge(pts(rooms, 'bath'), 0, -0.5))
+    expect(pts(out.rooms, 'living')).toEqual(pts(rooms, 'living'))
+    // Its bottom edge, shared with the kitchen, did not move.
+    expect(pts(out.rooms, 'kitchen')).toEqual(pts(rooms, 'kitchen'))
+  })
+
+  it('carries the walls a corner moves, and keeps a neighbor that would fold up', () => {
+    // The bathroom's bottom-left corner (index 3) to (4.5, 2): its wall with the kitchen moves down, and its
+    // left wall right, taking the living room's whole right wall, which the kitchen shares too.
+    const out = moveShared(rooms, [], 'bath', moveCorner(pts(rooms, 'bath'), 3, [4.5, 2]))
+    expect(pts(out.rooms, 'living')).toEqual(rectPoints([0, 0, 4.5, 3]))
+    expect(pts(out.rooms, 'kitchen')).toEqual(rectPoints([4.5, 2, 6, 3]))
+    // Pushing the shared wall right through the kitchen would fold it: it stays.
+    const far = moveShared(rooms, [], 'bath', moveEdge(pts(rooms, 'bath'), 2, 3))
+    expect(pts(far.rooms, 'kitchen')).toEqual(pts(rooms, 'kitchen'))
   })
 })

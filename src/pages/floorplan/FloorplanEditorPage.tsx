@@ -63,7 +63,7 @@ function hintFor(tool: Tool, corners: number): string {
       ? 'Click the next corner · click the first corner, double-click or Enter to close · Backspace undoes a corner'
       : 'Click each corner of the room, or drag to draw a rectangle · edges snap to other rooms so they share a wall'
   if (tool === 'select')
-    return 'Drag a room to move it · drag a corner or an edge dot to reshape it · drag the grid to pan'
+    return 'Drag a room to move it · drag a corner or edge dot to reshape it; rooms across the wall follow (Alt: just this one)'
   if (tool === 'fitting') return 'Click to place it · R turns the selected fitting'
   if (tool === 'reference') return 'Drag the reference image into place under your drawing'
   if (tool === 'calibrate') return 'Click both ends of a length you know on the reference image, e.g. a wall'

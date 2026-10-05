@@ -51,7 +51,7 @@ Walls are drawn by their **centerline**, so a 20 cm wall whose inner face is at 
 
 ![The Monoambiente traced from a listing's plan: rooms, doors with their swing, fittings](images/floorplan-traced-monoambiente.jpg)
 
-With *Select*, drag a room to move it, a corner to reshape it (its neighbors follow so corners stay square), or the dot on an edge to push or pull that wall. The panel lists what is missing or wrong (overlapping rooms, no door yet) before you save. *Edit floor plan* on the space's page opens it again, reference image included. Walls must run along the plan's axes ([ADR 0011](adr/0011-right-angled-rooms.md)); for angled walls, columns or a dropped ceiling, write the plan by hand.
+With *Select*, drag a room to move it, a corner to reshape it (the corners next to it follow so the room stays square), or the dot on an edge to push or pull that wall. Rooms on the other side of a wall you move go with it, so neighbors stay against each other, and so do the doors and windows in it; hold `Alt` to move just the selected room. The panel lists what is missing or wrong (overlapping rooms, no door yet) before you save. *Edit floor plan* on the space's page opens it again, reference image included. Walls must run along the plan's axes ([ADR 0011](adr/0011-right-angled-rooms.md)); for angled walls, columns or a dropped ceiling, write the plan by hand.
 
 ## 4. Or write the plan by hand
 
