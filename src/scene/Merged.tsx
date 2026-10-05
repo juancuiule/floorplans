@@ -69,14 +69,27 @@ function collect(node: THREE.Object3D, parent: THREE.Matrix4, root: THREE.Object
     material &&
     !Array.isArray(material) &&
     !Object.keys(geometry.morphAttributes).length &&
-    ((o as THREE.Mesh).isMesh ? !(o as THREE.InstancedMesh).isInstancedMesh && !(o as THREE.SkinnedMesh).isSkinnedMesh : (o as THREE.LineSegments).isLineSegments) &&
+    ((o as THREE.Mesh).isMesh
+      ? !(o as THREE.InstancedMesh).isInstancedMesh && !(o as THREE.SkinnedMesh).isSkinnedMesh
+      : (o as THREE.LineSegments).isLineSegments) &&
     // Mirrored transforms would flip the triangle winding.
     matrix.determinant() > 0
   if (mergeable) {
     const kind = (o as THREE.Mesh).isMesh ? 'mesh' : 'lines'
     const key = `${kind}|${material.uuid}|${o.castShadow}|${o.receiveShadow}|${o.renderOrder}|${attributeKey(geometry)}`
     let b = buckets.get(key)
-    if (!b) buckets.set(key, (b = { kind, material, castShadow: o.castShadow, receiveShadow: o.receiveShadow, renderOrder: o.renderOrder, parts: [] }))
+    if (!b)
+      buckets.set(
+        key,
+        (b = {
+          kind,
+          material,
+          castShadow: o.castShadow,
+          receiveShadow: o.receiveShadow,
+          renderOrder: o.renderOrder,
+          parts: [],
+        }),
+      )
     b.parts.push({ object: o, matrix })
   }
   for (const child of node.children) collect(child, matrix, root, buckets)

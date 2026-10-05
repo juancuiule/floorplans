@@ -13,7 +13,9 @@ const STUB = 0.3
 const r6 = (v: number) => Math.round(v * 1e6) / 1e6
 /** Sorted and rounded to the micron, so float noise (1.6 + 1.0) does not matter. */
 const sortPieces = (ps: WallPiece[]) =>
-  ps.map((p) => ({ ...p, s0: r6(p.s0), s1: r6(p.s1), y0: r6(p.y0), y1: r6(p.y1) })).sort((a, b) => a.s0 - b.s0 || a.y0 - b.y0)
+  ps
+    .map((p) => ({ ...p, s0: r6(p.s0), s1: r6(p.s1), y0: r6(p.y0), y1: r6(p.y1) }))
+    .sort((a, b) => a.s0 - b.s0 || a.y0 - b.y0)
 /** Sum of piece areas: the solid part of the wall face. */
 const area = (ps: WallPiece[]) => ps.reduce((s, p) => s + (p.s1 - p.s0) * (p.y1 - p.y0), 0)
 

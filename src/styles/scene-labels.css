@@ -1,0 +1,21 @@
+/* ---------- scene labels ---------- */
+
+.room-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.78);
+  box-shadow: 0 0 0 1px var(--line);
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.room-label span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

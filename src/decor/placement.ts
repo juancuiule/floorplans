@@ -104,7 +104,11 @@ const MOUNT_PULL = 0.35
 const vec = (p: THREE.Vector3): Vec3 => [round(p.x), roundY(p.y), round(p.z)]
 
 /** The patch that moves `item` to the hit, or null if it cannot go there. */
-export function placeAt(item: DecorItem, hit: SurfaceHit, opts: { free?: boolean; report?: { snap: SnapFace[] } } = {}): Partial<DecorItem> | null {
+export function placeAt(
+  item: DecorItem,
+  hit: SurfaceHit,
+  opts: { free?: boolean; report?: { snap: SnapFace[] } } = {},
+): Partial<DecorItem> | null {
   if (opts.report) opts.report.snap = []
   const mount = mountOf(item)
   if (mount === 'wall') {
@@ -125,7 +129,8 @@ export function placeAt(item: DecorItem, hit: SurfaceHit, opts: { free?: boolean
     if (item.kind === 'furniture' && !opts.free && SNAPS.has(item.type) && hit.point.y < 0.05) {
       const snapped = snapToWalls(hit.point.x, hit.point.z, item)
       if (snapped && opts.report) opts.report.snap = snapped.faces
-      if (snapped) return { at: [snapped.x, roundY(hit.point.y), snapped.z], rotation: snapped.rotation } as Partial<FurnitureItem>
+      if (snapped)
+        return { at: [snapped.x, roundY(hit.point.y), snapped.z], rotation: snapped.rotation } as Partial<FurnitureItem>
     }
     return { at: vec(hit.point) }
   }
@@ -136,7 +141,22 @@ export function placeAt(item: DecorItem, hit: SurfaceHit, opts: { free?: boolean
 // ---------- wall snapping for floor furniture ----------
 
 /** Pieces that belong against a wall. Tables, chairs and rugs stay free. */
-const SNAPS = new Set<FurnitureItem['type']>(['platformBed', 'murphyBed', 'daybed', 'sofa', 'standingDesk', 'bookshelf', 'wardrobe', 'sideboard', 'blockShelf', 'loftBed', 'windowBench', 'balconyBench', 'planterWall', 'fridge'])
+const SNAPS = new Set<FurnitureItem['type']>([
+  'platformBed',
+  'murphyBed',
+  'daybed',
+  'sofa',
+  'standingDesk',
+  'bookshelf',
+  'wardrobe',
+  'sideboard',
+  'blockShelf',
+  'loftBed',
+  'windowBench',
+  'balconyBench',
+  'planterWall',
+  'fridge',
+])
 const SNAP_REACH = 0.45
 const GAP = 0.004
 
@@ -176,10 +196,16 @@ function wallFaces(): Face[] {
     const t = w.thickness / 2
     if (alongZ) {
       const [min, max] = [Math.min(w.a[1], w.b[1]), Math.max(w.a[1], w.b[1])]
-      faces.push({ axis: 'x', coord: w.a[0] + t, normal: 1, min, max }, { axis: 'x', coord: w.a[0] - t, normal: -1, min, max })
+      faces.push(
+        { axis: 'x', coord: w.a[0] + t, normal: 1, min, max },
+        { axis: 'x', coord: w.a[0] - t, normal: -1, min, max },
+      )
     } else {
       const [min, max] = [Math.min(w.a[0], w.b[0]), Math.max(w.a[0], w.b[0])]
-      faces.push({ axis: 'z', coord: w.a[1] + t, normal: 1, min, max }, { axis: 'z', coord: w.a[1] - t, normal: -1, min, max })
+      faces.push(
+        { axis: 'z', coord: w.a[1] + t, normal: 1, min, max },
+        { axis: 'z', coord: w.a[1] - t, normal: -1, min, max },
+      )
     }
   }
   return faces
@@ -189,7 +215,11 @@ function wallFaces(): Face[] {
  * Backs the piece onto the nearest wall face within reach, turns it to face the
  * room, then slides it out of any perpendicular wall it would cut into.
  */
-export function snapToWalls(x: number, z: number, item: FurnitureItem): { x: number; z: number; rotation: number; faces: SnapFace[] } | null {
+export function snapToWalls(
+  x: number,
+  z: number,
+  item: FurnitureItem,
+): { x: number; z: number; rotation: number; faces: SnapFace[] } | null {
   const [w, , d] = item.size
   let best: { face: Face; dist: number } | null = null
   for (const f of wallFaces()) {
@@ -238,9 +268,18 @@ export function snapToWalls(x: number, z: number, item: FurnitureItem): { x: num
   }
   const h = item.size[1]
   const alongC = f.axis === 'x' ? nz : nx
-  const snapFaces: SnapFace[] = [{ axis: f.axis, coord: f.coord, normal: f.normal, from: alongC - w / 2, to: alongC + w / 2, height: h }]
+  const snapFaces: SnapFace[] = [
+    { axis: f.axis, coord: f.coord, normal: f.normal, from: alongC - w / 2, to: alongC + w / 2, height: h },
+  ]
   for (const { g } of touched) {
-    snapFaces.push({ axis: g.axis, coord: g.coord, normal: g.normal, from: Math.min(f.coord, off + f.normal * (d / 2)), to: Math.max(f.coord, off + f.normal * (d / 2)), height: h })
+    snapFaces.push({
+      axis: g.axis,
+      coord: g.coord,
+      normal: g.normal,
+      from: Math.min(f.coord, off + f.normal * (d / 2)),
+      to: Math.max(f.coord, off + f.normal * (d / 2)),
+      height: h,
+    })
   }
   return { x: round(nx), z: round(nz), rotation, faces: snapFaces }
 }
@@ -259,7 +298,13 @@ export interface Footprint {
 
 /** Floor furniture that takes up floor area (rugs lie under things, so they are left out). */
 export function isFloorPiece(item: DecorItem): item is FurnitureItem {
-  return item.kind === 'furniture' && FURNITURE[item.type].mount === 'surface' && item.type !== 'rug' && item.at[1] < 0.3 && item.at[1] > -1
+  return (
+    item.kind === 'furniture' &&
+    FURNITURE[item.type].mount === 'surface' &&
+    item.type !== 'rug' &&
+    item.at[1] < 0.3 &&
+    item.at[1] > -1
+  )
 }
 
 export function footprintOf(item: FurnitureItem): Footprint {
@@ -322,7 +367,9 @@ function solidRects(): Footprint[] {
     const ux = dx / len
     const uz = dz / len
     // Pieces of the wall between floor-level openings.
-    const gaps = (w.openings ?? []).filter((o) => (o.sill ?? 0) < 0.05 && o.height > 1.5).map((o) => [o.offset, o.offset + o.width] as const)
+    const gaps = (w.openings ?? [])
+      .filter((o) => (o.sill ?? 0) < 0.05 && o.height > 1.5)
+      .map((o) => [o.offset, o.offset + o.width] as const)
     gaps.sort((p, q) => p[0] - q[0])
     let s = 0
     const spans: [number, number][] = []
@@ -357,7 +404,9 @@ export interface Collision {
 export function collisionsOf(item: DecorItem, items: DecorItem[]): Collision {
   if (!isFloorPiece(item)) return { overlaps: [], wall: false }
   const fp = footprintOf(item)
-  const overlaps = items.filter((o) => o.id !== item.id && isFloorPiece(o) && rectsOverlap(fp, footprintOf(o))).map((o) => o.id)
+  const overlaps = items
+    .filter((o) => o.id !== item.id && isFloorPiece(o) && rectsOverlap(fp, footprintOf(o)))
+    .map((o) => o.id)
   const wall = solidRects().some((r) => rectsOverlap(fp, r, 0.015))
   return { overlaps, wall }
 }

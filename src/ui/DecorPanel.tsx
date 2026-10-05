@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { useDecor, type PanelTab } from '../decor/store'
-import { ArtworkLibrary, dragHasFiles, uploadFiles } from './ArtworkLibrary'
+import { SAVE_STATUS_MESSAGE, useDecor, type PanelTab } from '../decor/store'
+import { ArtworkLibrary } from './ArtworkLibrary'
+import { dragHasFiles, uploadFiles } from './uploads'
 import { TABS, tabOfKind } from './format'
 import { FinishesPanel } from './FinishesPanel'
 import { Icon, type IconName } from './icons'
 import { Inspector } from './Inspector'
-import { CatalogLibrary, LIBRARY_ENTRIES } from './Libraries'
+import { CatalogLibrary } from './Libraries'
+import { LIBRARY_ENTRIES } from './libraryEntries'
 import { LayoutMenu } from './LayoutMenu'
-import { RoomList, useRoomCounts } from './RoomList'
+import { RoomList } from './RoomList'
+import { useRoomCounts } from './useRoomCounts'
 import { SelectionInspector } from './SelectionInspector'
 import { useUi } from './uiStore'
 
@@ -17,7 +20,10 @@ import { useUi } from './uiStore'
 // item around the room does not re-render the libraries.
 
 /** The decor tabs plus Room (finishes), which has no library or items of its own. */
-const PANEL_TABS: { id: PanelTab; label: string; icon: IconName }[] = [...TABS, { id: 'room', label: 'Room', icon: 'roller' }]
+const PANEL_TABS: { id: PanelTab; label: string; icon: IconName }[] = [
+  ...TABS,
+  { id: 'room', label: 'Room', icon: 'roller' },
+]
 
 export function DecorPanel() {
   const open = useUi((s) => s.panelOpen)
@@ -30,7 +36,11 @@ function PanelBody() {
   const setTab = useDecor((s) => s.setTab)
   const selectedId = useDecor((s) => s.selectedId)
   const selectedKind = useDecor((s) => s.items.find((i) => i.id === s.selectedId)?.kind)
-  const error = useDecor((s) => (s.error?.startsWith('Saving') ? s.error : null))
+  const error = useDecor((s) =>
+    s.saveStatus === 'ok'
+      ? null
+      : SAVE_STATUS_MESSAGE[s.saveStatus] + (s.fileProblem ? ` Problem: ${s.fileProblem}.` : ''),
+  )
   const [query, setQuery] = useState('')
   const [dropping, setDropping] = useState(false)
   const dragDepth = useRef(0)
@@ -101,7 +111,12 @@ function PanelBody() {
             {current.id === 'artwork' ? (
               <ArtworkLibrary query={query} onClear={() => setQuery('')} />
             ) : (
-              <CatalogLibrary entries={LIBRARY_ENTRIES[current.id as keyof typeof LIBRARY_ENTRIES]} query={query} noun={current.noun} onClear={() => setQuery('')} />
+              <CatalogLibrary
+                entries={LIBRARY_ENTRIES[current.id as keyof typeof LIBRARY_ENTRIES]}
+                query={query}
+                noun={current.noun}
+                onClear={() => setQuery('')}
+              />
             )}
           </>
         )}
@@ -156,7 +171,15 @@ function Tabs({ tab, onChange }: { tab: PanelTab; onChange: (t: PanelTab) => voi
   )
 }
 
-function SearchBox({ query, onChange, placeholder }: { query: string; onChange: (q: string) => void; placeholder: string }) {
+function SearchBox({
+  query,
+  onChange,
+  placeholder,
+}: {
+  query: string
+  onChange: (q: string) => void
+  placeholder: string
+}) {
   return (
     <div className="search">
       <label htmlFor="decor-search" className="sr-only">

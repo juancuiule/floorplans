@@ -49,7 +49,9 @@ describe('patterns', () => {
 
   it('actually draws on the canvas', () => {
     const p = tiles('#123456', '#000000', 0.45, 0.45)
-    const log = (globalThis as { __canvasCalls?: WeakMap<HTMLCanvasElement, string[]> }).__canvasCalls?.get(p.texture.image as HTMLCanvasElement)
+    const log = (globalThis as { __canvasCalls?: WeakMap<HTMLCanvasElement, string[]> }).__canvasCalls?.get(
+      p.texture.image as HTMLCanvasElement,
+    )
     // grout fill, then per tile (3 × 3): the tile and a two-strip bevel
     expect(log?.filter((c) => c === 'fillRect').length).toBe(1 + 3 * 3 * 3)
   })

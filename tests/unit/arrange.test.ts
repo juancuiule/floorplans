@@ -1,6 +1,16 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { align, distribute, followLead, hangGallery, matchSize, rotateAround, selectionFrame, unitsOf, type Patches } from '../../src/decor/arrange'
+import {
+  align,
+  distribute,
+  followLead,
+  hangGallery,
+  matchSize,
+  rotateAround,
+  selectionFrame,
+  unitsOf,
+  type Patches,
+} from '../../src/decor/arrange'
 import { boxIn, FLOOR_FRAME, wallFrameOf, type Frame } from '../../src/decor/extent'
 import type { ArtworkItem, DecorItem, FurnitureItem } from '../../src/model/decor'
 

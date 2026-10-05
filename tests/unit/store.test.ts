@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { newId } from '../../src/decor/clone'
 import type { DecorItem, LampItem, PlantItem } from '../../src/model/decor'
+import { openTestPlan, planUrl, TEST_SPACE } from './plans'
 
 // The store reads ?decor= at import time and persists through fetch, so each test
 // sets the URL, stubs fetch and imports a fresh copy of the module.
@@ -22,9 +24,10 @@ function stubFetch() {
     vi.fn(async (input: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET'
       calls.push({ url: String(input), method, body: init?.body as string | undefined })
-      if (String(input).startsWith('/api/decor') && method === 'GET') return new Response(JSON.stringify(fileOnDisk))
-      if (String(input).startsWith('/api/decor') && method === 'PUT') return new Response('{"ok":true}')
-      if (String(input) === '/api/artwork') return new Response(JSON.stringify([{ name: 'a.png', url: '/artwork/a.png' }]))
+      if (String(input).includes('/decor') && method === 'GET') return new Response(JSON.stringify(fileOnDisk))
+      if (String(input).includes('/decor') && method === 'PUT') return new Response('{"ok":true}')
+      if (String(input).endsWith('/artwork'))
+        return new Response(JSON.stringify([{ name: 'a.png', url: '/artwork/a.png' }]))
       return new Response('{}', { status: 404 })
     }),
   )
@@ -33,11 +36,30 @@ function stubFetch() {
 async function freshStore(search = '?decor=unit'): Promise<Store> {
   window.history.replaceState(null, '', `/${search}`)
   vi.resetModules()
+  await openTestPlan()
   return import('../../src/decor/store')
 }
 
-const plant = (id: string, x = 4): PlantItem => ({ kind: 'plant', id, species: 'monstera', pot: 'ceramic', at: [x, 0, 1], rotation: 0, scale: 1 })
-const lamp = (id: string): LampItem => ({ kind: 'lamp', id, type: 'arc', at: [3, 0, 2], rotation: 0, on: true, brightness: 1, warmth: 2700, color: '#ffffff' })
+const plant = (id: string, x = 4): PlantItem => ({
+  kind: 'plant',
+  id,
+  species: 'monstera',
+  pot: 'ceramic',
+  at: [x, 0, 1],
+  rotation: 0,
+  scale: 1,
+})
+const lamp = (id: string): LampItem => ({
+  kind: 'lamp',
+  id,
+  type: 'arc',
+  at: [3, 0, 2],
+  rotation: 0,
+  on: true,
+  brightness: 1,
+  warmth: 2700,
+  color: '#ffffff',
+})
 
 const puts = () => calls.filter((c) => c.method === 'PUT')
 const lastSavedItems = () => {
@@ -58,7 +80,7 @@ describe('load', () => {
   it('reads the ?decor= file and marks the store loaded', async () => {
     const { useDecor } = await freshStore('?decor=unit')
     await useDecor.getState().load()
-    expect(calls[0]).toMatchObject({ url: '/api/decor?file=unit', method: 'GET' })
+    expect(calls[0]).toMatchObject({ url: planUrl('decor?file=unit'), method: 'GET' })
     expect(useDecor.getState().loaded).toBe(true)
     expect(useDecor.getState().items.map((i) => i.id)).toEqual(['p1', 'l1'])
   })
@@ -66,7 +88,7 @@ describe('load', () => {
   it('uses the default decor file without ?decor=', async () => {
     const { useDecor } = await freshStore('')
     await useDecor.getState().load()
-    expect(calls[0].url).toBe('/api/decor')
+    expect(calls[0].url).toBe(planUrl('decor'))
   })
 
   it('does not write back what it just loaded', async () => {
@@ -87,14 +109,19 @@ describe('load', () => {
   })
 
   it('reports that saving is unavailable without the dev API and never writes', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('offline'))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new Error('offline'))),
+    )
     const { useDecor } = await freshStore()
     await useDecor.getState().load()
-    expect(useDecor.getState().error).toMatch(/dev server/)
+    expect(useDecor.getState().saveStatus).toBe('no-api')
     useDecor.getState().startPlacing(plant('x'))
     useDecor.getState().stopMoving()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(vi.mocked(fetch).mock.calls.filter((c) => (c[1] as RequestInit | undefined)?.method === 'PUT')).toHaveLength(0)
+    expect(vi.mocked(fetch).mock.calls.filter((c) => (c[1] as RequestInit | undefined)?.method === 'PUT')).toHaveLength(
+      0,
+    )
   })
 })
 
@@ -231,8 +258,8 @@ describe('update, remove, duplicate', () => {
   })
 
   it('newId prefixes the kind and is unique', () => {
-    const ids = new Set(Array.from({ length: 200 }, () => store.newId('artwork')))
-    expect(ids.size).toBe(200)
+    const ids = new Set(Array.from({ length: 5000 }, () => newId('artwork')))
+    expect(ids.size).toBe(5000)
     for (const id of ids) expect(id).toMatch(/^artwork-[a-z0-9]+$/)
   })
 })
@@ -259,7 +286,7 @@ describe('persistence', () => {
     expect(puts()).toHaveLength(0)
     await vi.advanceTimersByTimeAsync(400)
     expect(puts()).toHaveLength(1)
-    expect(puts()[0].url).toBe('/api/decor?file=unit')
+    expect(puts()[0].url).toBe(planUrl('decor?file=unit'))
     expect(JSON.parse(puts()[0].body!)).toMatchObject({ version: 1 })
     expect(lastSavedItems()!.map((i) => i.id)).toEqual(['p1', 'l1', 'new'])
   })
@@ -306,16 +333,19 @@ describe('library', () => {
     const img = await useDecor.getState().upload(file)
     await useDecor.getState().upload(file)
     expect(img).toEqual({ name: 'my pic.png', url: '/artwork/my%20pic.png' })
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/artwork?name=my%20pic.png')
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`/api/spaces/${TEST_SPACE}/artwork?name=my%20pic.png`)
     expect(useDecor.getState().library.filter((x) => x.name === 'my pic.png')).toHaveLength(1)
   })
 
   it('upload surfaces the server error', async () => {
     const { useDecor } = await freshStore()
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'Only png' }), { status: 400 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ error: 'Only png' }), { status: 400 })),
+    )
     const img = await useDecor.getState().upload(new File([], 'x.txt'))
     expect(img).toBeNull()
-    expect(useDecor.getState().error).toBe('Only png')
+    expect(useDecor.getState().uploadError).toBe('Only png')
   })
 })
 
@@ -381,11 +411,13 @@ describe('a broken layout file', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         calls.push({ url: String(url), method: init?.method ?? 'GET', body: init?.body as string | undefined })
-        return init?.method === 'PUT' ? new Response('{"ok":true}') : new Response(text, { headers: { 'Content-Type': 'application/json' } })
+        return init?.method === 'PUT'
+          ? new Response('{"ok":true}')
+          : new Response(text, { headers: { 'Content-Type': 'application/json' } })
       }),
     )
     await useDecor.getState().load()
-    expect(useDecor.getState().error).toMatch(/^Saving paused/)
+    expect(useDecor.getState().saveStatus).toBe('broken-file')
     // What was on screen stays, and is not written over the file being fixed.
     expect(useDecor.getState().items.map((i) => i.id)).toEqual(['p1', 'l1'])
     useDecor.getState().update<PlantItem>('p1', { scale: 1.3 })
@@ -394,17 +426,47 @@ describe('a broken layout file', () => {
 
     text = JSON.stringify({ version: 1, items: [plant('p1')] })
     await useDecor.getState().load()
-    expect(useDecor.getState().error).toBeNull()
+    expect(useDecor.getState().saveStatus).toBe('ok')
     useDecor.getState().update<PlantItem>('p1', { scale: 1.4 })
     await vi.advanceTimersByTimeAsync(1000)
     expect(lastSavedItems()?.[0]).toMatchObject({ id: 'p1', scale: 1.4 })
   })
 
+  it('treats a layout with an unknown catalog entry as broken, and says why', async () => {
+    const { useDecor } = await freshStore()
+    fileOnDisk = { version: 1, items: [{ ...plant('p1'), species: 'triffid' } as unknown as DecorItem] }
+    await useDecor.getState().load()
+    expect(useDecor.getState().saveStatus).toBe('broken-file')
+    expect(useDecor.getState().fileProblem).toMatch(/^items\[0\]\.species: .*"triffid"$/)
+  })
+
+  it('stays paused after an upload succeeds', async () => {
+    const { useDecor } = await freshStore()
+    await useDecor.getState().load()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({ url: String(url), method: init?.method ?? 'GET', body: init?.body as string | undefined })
+        if (String(url).includes('/artwork')) return new Response('{"name":"a.png","url":"/artwork/a.png"}')
+        return init?.method === 'PUT' ? new Response('{"ok":true}') : new Response('{ "items": [')
+      }),
+    )
+    await useDecor.getState().load()
+    expect(await useDecor.getState().upload(new File([], 'a.png'))).not.toBeNull()
+    useDecor.getState().update<PlantItem>('p1', { scale: 1.3 })
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(useDecor.getState().saveStatus).toBe('broken-file')
+    expect(puts()).toHaveLength(0)
+  })
+
   it('treats a file without an items array as broken', async () => {
     const { useDecor } = await freshStore()
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"version":1,"items":{}}')))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{"version":1,"items":{}}')),
+    )
     await useDecor.getState().load()
-    expect(useDecor.getState().error).toMatch(/^Saving paused/)
+    expect(useDecor.getState().saveStatus).toBe('broken-file')
   })
 })
 

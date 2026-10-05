@@ -1,0 +1,74 @@
+/* ---------- popover ---------- */
+
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: min(372px, calc(100vw - 2 * var(--gutter)));
+  max-height: calc(100dvh - 90px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow:
+    var(--shadow),
+    0 16px 40px rgb(0 0 0 / 0.12);
+  font-size: 12px;
+}
+
+.popover:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.popover h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.popover section + section {
+  margin-top: 14px;
+}
+
+.shortcuts dl {
+  margin: 6px 0 0;
+  display: grid;
+  grid-template-columns: 124px 1fr;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
+.shortcut {
+  display: contents;
+}
+
+.shortcut dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.shortcut dd {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.combo .or {
+  margin-inline-end: 1px;
+  color: var(--muted);
+}

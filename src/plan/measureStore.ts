@@ -45,7 +45,8 @@ export const useMeasure = create<MeasureState>((set, get) => ({
     get().remove(id)
     return true
   },
-  remove: (id) => set((s) => ({ items: s.items.filter((m) => m.id !== id), hoverId: s.hoverId === id ? null : s.hoverId })),
+  remove: (id) =>
+    set((s) => ({ items: s.items.filter((m) => m.id !== id), hoverId: s.hoverId === id ? null : s.hoverId })),
   clear: () => set({ items: [], start: null, hoverId: null }),
   setHover: (hoverId) => set({ hoverId }),
 }))

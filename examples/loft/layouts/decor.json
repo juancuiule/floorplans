@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "kind": "furniture",
+      "id": "furniture-sofa",
+      "type": "sofa",
+      "at": [
+        4.1,
+        0,
+        3.7600000000000002
+      ],
+      "rotation": 180,
+      "size": [
+        1.6,
+        0.7,
+        0.88
+      ],
+      "finish": {
+        "body": "#dcc196",
+        "metal": "#1d1d1d",
+        "fabric": "#d3c3a6"
+      },
+      "options": {}
+    },
+    {
+      "kind": "furniture",
+      "id": "furniture-rug",
+      "type": "rug",
+      "at": [
+        4.1,
+        0,
+        2.9
+      ],
+      "rotation": 0,
+      "size": [
+        2,
+        0.012,
+        1.4
+      ],
+      "finish": {
+        "body": "#dcc196",
+        "metal": "#1d1d1d",
+        "fabric": "#d3c3a6"
+      },
+      "options": {
+        "border": true
+      }
+    },
+    {
+      "kind": "furniture",
+      "id": "furniture-platformBed",
+      "type": "platformBed",
+      "at": [
+        5,
+        0,
+        1.02
+      ],
+      "rotation": 0,
+      "size": [
+        1.56,
+        0.4,
+        2.04
+      ],
+      "finish": {
+        "body": "#dcc196",
+        "metal": "#1d1d1d",
+        "fabric": "#e6e0d4"
+      },
+      "options": {
+        "headShelf": "L",
+        "books": true
+      }
+    },
+    {
+      "kind": "furniture",
+      "id": "furniture-standingDesk",
+      "type": "standingDesk",
+      "at": [
+        2.45,
+        0,
+        0.8
+      ],
+      "rotation": 90,
+      "size": [
+        1.4,
+        0.72,
+        0.7
+      ],
+      "finish": {
+        "body": "#6a4731",
+        "metal": "#1d1d1d",
+        "fabric": "#e6e0d4"
+      },
+      "options": {
+        "riser": true,
+        "monitor": true
+      }
+    },
+    {
+      "kind": "furniture",
+      "id": "furniture-officeChair",
+      "type": "officeChair",
+      "at": [
+        2.85,
+        0,
+        0.8
+      ],
+      "rotation": 270,
+      "size": [
+        0.66,
+        1.22,
+        0.66
+      ],
+      "finish": {
+        "body": "#dcc196",
+        "metal": "#1d1d1d",
+        "fabric": "#e6e0d4"
+      },
+      "options": {
+        "color": "black",
+        "seat": 48,
+        "headrest": true
+      }
+    },
+    {
+      "kind": "furniture",
+      "id": "furniture-bookshelf",
+      "type": "bookshelf",
+      "at": [
+        2.75,
+        0,
+        4.035
+      ],
+      "rotation": 180,
+      "size": [
+        1.05,
+        1.08,
+        0.33
+      ],
+      "finish": {
+        "body": "#dcc196",
+        "metal": "#1d1d1d",
+        "fabric": "#e6e0d4"
+      },
+      "options": {
+        "books": true
+      }
+    },
+    {
+      "kind": "plant",
+      "id": "plant-monstera",
+      "species": "monstera",
+      "pot": "ceramic",
+      "at": [
+        5.7,
+        0,
+        3.85
+      ],
+      "rotation": 0,
+      "scale": 1
+    },
+    {
+      "kind": "lamp",
+      "id": "lamp-arc",
+      "type": "arc",
+      "at": [
+        5.2,
+        0,
+        3.9
+      ],
+      "rotation": 0,
+      "on": true,
+      "brightness": 1,
+      "warmth": 2700,
+      "color": "#e9e6e0"
+    },
+    {
+      "kind": "plant",
+      "id": "plant-snake",
+      "species": "snake",
+      "pot": "concrete",
+      "at": [
+        2.35,
+        0,
+        1.75
+      ],
+      "rotation": 0,
+      "scale": 1
+    }
+  ]
+}

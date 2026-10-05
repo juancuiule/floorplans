@@ -1,14 +1,15 @@
 // Screenshots of the gallery-wall tools: a selection with the align tools in the
 // edit bar, a finished gallery wall over a sofa, and smart guides on the floor.
-// Uses data/decor.test-gallery.json (git-ignored), never your real layout.
+// Uses the scratch layout test-gallery (git-ignored), never your real layout.
 // Usage: node scripts/shoot-gallery.mjs <outDir> [baseUrl]
 import { chromium } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { appUrl, layoutFile } from '../tests/e2e/space.mjs'
 
 const [outDir = 'test-results/gallery', base = 'http://localhost:5173'] = process.argv.slice(2)
 mkdirSync(outDir, { recursive: true })
-writeFileSync('data/decor.test-gallery.json', JSON.stringify({ version: 1, items: [] }, null, 2) + '\n')
+writeFileSync(layoutFile('test-gallery'), JSON.stringify({ version: 1, items: [] }, null, 2) + '\n')
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROME_PATH || undefined,
@@ -17,14 +18,23 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 page.on('pageerror', (e) => console.log('[pageerror]', e.message))
 
-await page.goto(`${base}/?cam=5.9,1.75,0.25,4.45,1.2,3&decor=test-gallery&dims=0`)
+await page.goto(`${appUrl(base)}&cam=5.9,1.75,0.25,4.45,1.2,3&decor=test-gallery&dims=0`)
 await page.waitForFunction(() => (window.__frames ?? 0) > 30 && window.__edit, null, { timeout: 60000 })
 await page.waitForTimeout(800)
 
 // A sofa against the kitchen-side wall, six prints hung anyhow above it, a chair in the room.
 await page.evaluate(async () => {
   const { FURNITURE } = await import('/src/decor/furnitureCatalog.ts')
-  const furniture = (id, type, at, rotation, size) => ({ kind: 'furniture', id, type, at, rotation, size: size ?? [...FURNITURE[type].size], finish: { ...FURNITURE[type].finish }, options: { ...FURNITURE[type].options } })
+  const furniture = (id, type, at, rotation, size) => ({
+    kind: 'furniture',
+    id,
+    type,
+    at,
+    rotation,
+    size: size ?? [...FURNITURE[type].size],
+    finish: { ...FURNITURE[type].finish },
+    options: { ...FURNITURE[type].options },
+  })
   const art = (id, image, x, y, w, h, style = 'thin', color = '#1f1e1c', mat = 0) => ({
     kind: 'artwork',
     id,
@@ -75,7 +85,7 @@ await page.screenshot({ path: join(outDir, 'gallery-3-finished.png') })
 
 // 3. Floor guides, from above: drag the chair toward the sofa's end until their sides line up.
 await page.waitForTimeout(600) // let the layout save
-await page.goto(`${base}/?cam=4.9,4.2,0.9,4.9,0,2.1&decor=test-gallery&dims=0`)
+await page.goto(`${appUrl(base)}&cam=4.9,4.2,0.9,4.9,0,2.1&decor=test-gallery&dims=0`)
 await page.waitForFunction(() => (window.__frames ?? 0) > 30 && window.__edit, null, { timeout: 60000 })
 await page.waitForTimeout(1200)
 const screen = (p) => page.evaluate((p) => window.__edit.toScreen(p), p)

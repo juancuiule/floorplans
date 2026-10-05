@@ -13,7 +13,8 @@ function useSpaceShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented || e.repeat) return
-      if ((e.target as HTMLElement).closest?.('input:not([type="range"]), select, textarea, [contenteditable="true"]')) return
+      if ((e.target as HTMLElement).closest?.('input:not([type="range"]), select, textarea, [contenteditable="true"]'))
+        return
       const v = useView.getState()
       const key = e.key.toLowerCase()
       // A piece following the pointer keeps the scene until it is set down or cancelled.
@@ -49,11 +50,23 @@ export function SpaceTools() {
         <Icon name="walk" />
         <span className="tb-label opt">Walk</span>
       </button>
-      <button type="button" aria-pressed={measuring} data-tip="Measure between two points (T)" aria-keyshortcuts="T" onClick={() => v.setTool(measuring ? null : 'measure')}>
+      <button
+        type="button"
+        aria-pressed={measuring}
+        data-tip="Measure between two points (T)"
+        aria-keyshortcuts="T"
+        onClick={() => v.setTool(measuring ? null : 'measure')}
+      >
         <Icon name="tape" />
         <span className="tb-label opt">Measure</span>
       </button>
-      <button type="button" aria-pressed={clearances} data-tip="Clearances around the selected piece (C)" aria-keyshortcuts="C" onClick={v.toggleClearances}>
+      <button
+        type="button"
+        aria-pressed={clearances}
+        data-tip="Clearances around the selected piece (C)"
+        aria-keyshortcuts="C"
+        onClick={v.toggleClearances}
+      >
         <Icon name="clearance" />
         <span className="tb-label opt">Clearances</span>
       </button>
@@ -94,10 +107,18 @@ export function SpaceHud() {
             <output htmlFor="eye-height">{eye.toFixed(2)} m</output>
           </div>
           <div className="hud-row presets" role="group" aria-label="Eye height presets">
-            <button type="button" aria-pressed={Math.abs(eye - EYE_STANDING) < 0.005} onClick={() => setEyeHeight(EYE_STANDING)}>
+            <button
+              type="button"
+              aria-pressed={Math.abs(eye - EYE_STANDING) < 0.005}
+              onClick={() => setEyeHeight(EYE_STANDING)}
+            >
               Standing
             </button>
-            <button type="button" aria-pressed={Math.abs(eye - EYE_SEATED) < 0.005} onClick={() => setEyeHeight(EYE_SEATED)}>
+            <button
+              type="button"
+              aria-pressed={Math.abs(eye - EYE_SEATED) < 0.005}
+              onClick={() => setEyeHeight(EYE_SEATED)}
+            >
               Seated
             </button>
           </div>
@@ -118,7 +139,8 @@ export function SpaceHud() {
             </button>
           </div>
           <p className="hud-hint" role="status">
-            {started ? 'Click the second point' : 'Click a first point'} · <kbd>Shift</kbd> keeps it straight · snaps within 5 cm
+            {started ? 'Click the second point' : 'Click a first point'} · <kbd>Shift</kbd> keeps it straight · snaps
+            within 5 cm
             {count > 0 && (
               <>
                 {' '}

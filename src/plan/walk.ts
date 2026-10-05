@@ -1,13 +1,13 @@
 import { isPendant, PENDANT_RADIUS, pendantBottom } from '../decor/pendant'
 import type { DecorItem } from '../model/decor'
 import type { Vec2 } from '../model/types'
-import { FLOOR_BOUNDS } from '../project/derived'
+import { FLOOR_BOUNDS, ENTRY_SPOT } from '../project/derived'
 import { furnitureObstacles, pushOut, shellObstacles, walkable, type Obstacle } from './obstacles'
 
 /** Half the width of a person's shoulders, roughly: how close the eye gets to a wall. */
 export const BODY_RADIUS = 0.2
 /** Where walk mode starts when no spot is picked: inside the front door, looking down the flat. */
-export const ENTRY_SPOT: Vec2 = [0.55, 1.9]
+export { ENTRY_SPOT }
 
 /** Floor you can stand on: every room and floor in the plan. */
 const [bx0, bz0, bx1, bz1] = FLOOR_BOUNDS

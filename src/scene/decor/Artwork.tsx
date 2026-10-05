@@ -127,5 +127,3 @@ function ImagePlane({ size, z, material }: { size: [number, number]; z: number; 
     </mesh>
   )
 }
-
-export { artworkOuterSize } from '../../decor/extent'

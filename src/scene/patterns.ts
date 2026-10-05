@@ -124,7 +124,10 @@ function drawPlanks(g: Ctx, size: Size, base: string, pw: number, pl: number, gr
     for (let x = -offsets[row % offsets.length] * pl; x < size[0]; x += pl) {
       const tone = shade(base, (r() - 0.5) * 0.07)
       const bands = Array.from({ length: 3 }, () => [r() * pw, pw * (0.08 + r() * 0.25), r() < 0.5 ? -1 : 1] as const)
-      const streaks = Array.from({ length: 16 }, () => [r() * pw, 0.0006 + r() * 0.0014, r() * 0.4 * pl, pl * (0.4 + r() * 0.6)] as const)
+      const streaks = Array.from(
+        { length: 16 },
+        () => [r() * pw, 0.0006 + r() * 0.0014, r() * 0.4 * pl, pl * (0.4 + r() * 0.6)] as const,
+      )
       wrapped(size, x, y, pl, pw, (dx) => {
         const x0 = x + dx
         g.globalAlpha = 1
@@ -166,7 +169,9 @@ function drawTiles(g: Ctx, size: Size, base: string, p: Extract<PatternDef, { ki
     for (let i = 0; i < nx; i++) {
       const tone = p.tones ? p.tones[Math.floor(r() * p.tones.length)] : base
       const fill = shade(tone, (r() - 0.5) * vary * 2)
-      const blobs = p.tones ? Array.from({ length: 4 }, () => [r(), r(), 0.2 + r() * 0.35, r() < 0.5 ? -1 : 1] as const) : []
+      const blobs = p.tones
+        ? Array.from({ length: 4 }, () => [r(), r(), 0.2 + r() * 0.35, r() < 0.5 ? -1 : 1] as const)
+        : []
       const x = i * p.width + shift
       const y = j * p.height
       wrapped(size, x, y, p.width, p.height, (dx) => {
@@ -225,7 +230,12 @@ function drawHerringbone(g: Ctx, base: string, width: number, length: number, gr
         for (let i = 0; i < 9; i++) {
           g.globalAlpha = (0.05 + 0.05 * grain) * hash(seed, i, 2)
           const sx = hash(seed, i, 3) * 0.3 * L
-          g.fillRect(sx, hash(seed, i, 4) * W, L * (0.5 + hash(seed, i, 5) * 0.5) - sx, 0.0006 + hash(seed, i, 6) * 0.0012)
+          g.fillRect(
+            sx,
+            hash(seed, i, 4) * W,
+            L * (0.5 + hash(seed, i, 5) * 0.5) - sx,
+            0.0006 + hash(seed, i, 6) * 0.0012,
+          )
         }
         g.globalAlpha = 0.85
         g.strokeStyle = joint
@@ -271,7 +281,13 @@ function hexTile(g: Ctx, p: Extract<PatternDef, { kind: 'hex' }>, cx: number, cy
     g.globalAlpha = 0.07
     g.fillStyle = shade(tone, (hash(seed, i, 1) - 0.5) * 0.14)
     g.beginPath()
-    g.arc(cx + (hash(seed, i, 2) - 0.5) * p.size, cy + (hash(seed, i, 3) - 0.5) * p.size, p.size * (0.15 + hash(seed, i, 4) * 0.3), 0, Math.PI * 2)
+    g.arc(
+      cx + (hash(seed, i, 2) - 0.5) * p.size,
+      cy + (hash(seed, i, 3) - 0.5) * p.size,
+      p.size * (0.15 + hash(seed, i, 4) * 0.3),
+      0,
+      Math.PI * 2,
+    )
     g.fill()
   }
   g.restore()
@@ -301,8 +317,10 @@ function drawConcrete(g: Ctx, size: Size, base: string) {
       g.arc(x + dx, y + dy, rad, 0, Math.PI * 2)
       g.fill()
     })
-  for (let i = 0; i < 260; i++) blob(r() * size[0], r() * size[1], 0.06 + r() * 0.34, shade(base, (r() - 0.5) * 0.08), 0.06)
-  for (let i = 0; i < 90; i++) blob(r() * size[0], r() * size[1], 0.01 + r() * 0.04, shade(base, (r() - 0.5) * 0.12), 0.1)
+  for (let i = 0; i < 260; i++)
+    blob(r() * size[0], r() * size[1], 0.06 + r() * 0.34, shade(base, (r() - 0.5) * 0.08), 0.06)
+  for (let i = 0; i < 90; i++)
+    blob(r() * size[0], r() * size[1], 0.01 + r() * 0.04, shade(base, (r() - 0.5) * 0.12), 0.1)
   for (let i = 0; i < 7000; i++) {
     g.globalAlpha = 0.12 + r() * 0.2
     g.fillStyle = shade(base, r() < 0.6 ? -0.1 - r() * 0.12 : 0.06)
@@ -436,12 +454,13 @@ export function patternThumb(def: MaterialDef, px = 112, meters = 0.8): string {
       g.beginPath()
       g.rect(size[0] * 0.13, size[1] * 0.21, meters, meters)
       g.clip()
-      for (const dx of [0, size[0]]) for (const dy of [0, size[1]]) {
-        g.save()
-        g.translate(dx, dy)
-        draw(g, def, size)
-        g.restore()
-      }
+      for (const dx of [0, size[0]])
+        for (const dy of [0, size[1]]) {
+          g.save()
+          g.translate(dx, dy)
+          draw(g, def, size)
+          g.restore()
+        }
     }
     url = canvas.toDataURL('image/png')
   } catch {
@@ -457,7 +476,11 @@ export function patternThumb(def: MaterialDef, px = 112, meters = 0.8): string {
  * where the hall's repeating pattern puts them (world-aligned, see
  * makeMaterial's `origin`), kept where `keep(x, z)` says so.
  */
-export function hexScatter(def: MaterialDef, rect: [number, number, number, number], keep: (x: number, z: number, col: number, row: number) => boolean) {
+export function hexScatter(
+  def: MaterialDef,
+  rect: [number, number, number, number],
+  keep: (x: number, z: number, col: number, row: number) => boolean,
+) {
   const p = def.pattern
   if (p?.kind !== 'hex') return null
   const [x0, z0, x1, z1] = rect

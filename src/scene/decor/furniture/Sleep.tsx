@@ -1,11 +1,26 @@
 import type { FurnitureItem } from '../../../model/decor'
-import { B, Books, FingerHole, mat, T } from './common'
+import { B, Books, FingerHole, T } from './common'
+import { mat } from './furnitureMaterials'
 
 const MATTRESS = '#f5f4f0'
 const PILLOW = '#fbfaf7'
 
 /** Mattress, duvet and pillows on a sleeping area centered at (cx, cz), top of base at y. */
-export function Bedding({ w, d, y, cx = 0, cz = 0, fabric }: { w: number; d: number; y: number; cx?: number; cz?: number; fabric: string }) {
+export function Bedding({
+  w,
+  d,
+  y,
+  cx = 0,
+  cz = 0,
+  fabric,
+}: {
+  w: number
+  d: number
+  y: number
+  cx?: number
+  cz?: number
+  fabric: string
+}) {
   const mh = 0.2
   const duvetD = d * 0.72
   const pillows = w > 1.1 ? 2 : 1
@@ -23,7 +38,25 @@ export function Bedding({ w, d, y, cx = 0, cz = 0, fabric }: { w: number; d: num
 }
 
 /** A row of open cubbies facing +z, spanning [x0, x1], depth `cd`, total height `h`. */
-function CubbyRow({ x0, x1, z, h, cd, m, books, seed }: { x0: number; x1: number; z: number; h: number; cd: number; m: ReturnType<typeof mat>; books: boolean; seed: string }) {
+function CubbyRow({
+  x0,
+  x1,
+  z,
+  h,
+  cd,
+  m,
+  books,
+  seed,
+}: {
+  x0: number
+  x1: number
+  z: number
+  h: number
+  cd: number
+  m: ReturnType<typeof mat>
+  books: boolean
+  seed: string
+}) {
   const len = x1 - x0
   const n = Math.max(1, Math.round(len / 0.42))
   const cw = len / n
@@ -32,11 +65,25 @@ function CubbyRow({ x0, x1, z, h, cd, m, books, seed }: { x0: number; x1: number
       {/* back of the cubbies */}
       <B s={[len, h - 2 * T, T]} p={[(x0 + x1) / 2, h / 2, z - cd + T / 2]} m={m} />
       {Array.from({ length: n + 1 }, (_, i) => (
-        <B key={i} s={[T, h - 2 * T, cd]} p={[x0 + i * cw + (i === 0 ? T / 2 : i === n ? -T / 2 : 0), h / 2, z - cd / 2]} m={m} />
+        <B
+          key={i}
+          s={[T, h - 2 * T, cd]}
+          p={[x0 + i * cw + (i === 0 ? T / 2 : i === n ? -T / 2 : 0), h / 2, z - cd / 2]}
+          m={m}
+        />
       ))}
       {books &&
         Array.from({ length: n }, (_, i) =>
-          i % 3 === 1 ? null : <Books key={i} w={cw - T * 1.5} h={h - 2 * T - 0.01} d={cd - T} seed={`${seed}${i}`} p={[x0 + (i + 0.5) * cw, T, z - cd / 2 + T / 2]} />,
+          i % 3 === 1 ? null : (
+            <Books
+              key={i}
+              w={cw - T * 1.5}
+              h={h - 2 * T - 0.01}
+              d={cd - T}
+              seed={`${seed}${i}`}
+              p={[x0 + (i + 0.5) * cw, T, z - cd / 2 + T / 2]}
+            />
+          ),
         )}
     </group>
   )
@@ -62,7 +109,16 @@ export function PlatformBed({ item }: { item: FurnitureItem }) {
       {/* cubbies: foot end (+z) and the free long side (-x) */}
       <CubbyRow x0={-w / 2} x1={w / 2} z={d / 2} h={h} cd={cd} m={body} books={books} seed={item.id + 'f'} />
       <group rotation={[0, -Math.PI / 2, 0]}>
-        <CubbyRow x0={-d / 2 + sd} x1={d / 2 - cd} z={w / 2} h={h} cd={cd} m={body} books={books} seed={item.id + 's'} />
+        <CubbyRow
+          x0={-d / 2 + sd}
+          x1={d / 2 - cd}
+          z={w / 2}
+          h={h}
+          cd={cd}
+          m={body}
+          books={books}
+          seed={item.id + 's'}
+        />
       </group>
       {/* closed long side under the L shelf */}
       <B s={[T, h - 2 * T, d]} p={[w / 2 - T / 2, h / 2, 0]} m={body} />
@@ -73,7 +129,12 @@ export function PlatformBed({ item }: { item: FurnitureItem }) {
           <B s={[w, T, sd]} p={[0, shelfH - T / 2, -d / 2 + sd / 2]} m={body} />
           <B s={[w, shelfH - h, T]} p={[0, h + (shelfH - h) / 2, -d / 2 + T / 2]} m={body} />
           {[-1, 1].map((sx) => (
-            <B key={sx} s={[T, shelfH - h, sd]} p={[sx * (w / 2 - T / 2), h + (shelfH - h) / 2, -d / 2 + sd / 2]} m={body} />
+            <B
+              key={sx}
+              s={[T, shelfH - h, sd]}
+              p={[sx * (w / 2 - T / 2), h + (shelfH - h) / 2, -d / 2 + sd / 2]}
+              m={body}
+            />
           ))}
         </group>
       )}
@@ -111,7 +172,11 @@ export function MurphyBed({ item }: { item: FurnitureItem }) {
       <B s={[innerW, T, d]} p={[0, upperY, 0]} m={body} />
       {[-1, 1].map((sx) => (
         <group key={sx}>
-          <B s={[innerW / 2 - 0.004, h - upperY - T - 0.006, T]} p={[(sx * innerW) / 4, (h + upperY) / 2, d / 2 - T / 2]} m={body} />
+          <B
+            s={[innerW / 2 - 0.004, h - upperY - T - 0.006, T]}
+            p={[(sx * innerW) / 4, (h + upperY) / 2, d / 2 - T / 2]}
+            m={body}
+          />
           <FingerHole p={[(sx * innerW) / 4 - sx * (innerW / 4 - 0.06), upperY + 0.08, d / 2 + 0.001]} />
         </group>
       ))}
@@ -121,7 +186,13 @@ export function MurphyBed({ item }: { item: FurnitureItem }) {
           {/* bed frame folded down, resting on a front leg */}
           <B s={[innerW - 0.02, 0.26, bedLen]} p={[0, 0.07 + 0.13, d / 2 - 0.12 + bedLen / 2]} m={body} />
           <B s={[innerW - 0.1, 0.07, T]} p={[0, 0.035, d / 2 - 0.12 + bedLen - 0.1]} m={body} />
-          <Bedding w={innerW - 0.08} d={bedLen - 0.06} y={0.33} cz={d / 2 - 0.12 + bedLen / 2} fabric={item.finish.fabric} />
+          <Bedding
+            w={innerW - 0.08}
+            d={bedLen - 0.06}
+            y={0.33}
+            cz={d / 2 - 0.12 + bedLen / 2}
+            fabric={item.finish.fabric}
+          />
         </group>
       ) : (
         <group>
@@ -160,7 +231,12 @@ export function Daybed({ item }: { item: FurnitureItem }) {
         [1, -1],
         [1, 1],
       ].map(([sx, sz]) => (
-        <mesh key={`${sx}${sz}`} position={[sx * (w / 2 - 0.06), caster / 2, sz * (d / 2 - 0.06)]} rotation={[0, 0, Math.PI / 2]} material={mat('#2a2a2a', 'matte')}>
+        <mesh
+          key={`${sx}${sz}`}
+          position={[sx * (w / 2 - 0.06), caster / 2, sz * (d / 2 - 0.06)]}
+          rotation={[0, 0, Math.PI / 2]}
+          material={mat('#2a2a2a', 'matte')}
+        >
           <cylinderGeometry args={[caster / 2, caster / 2, 0.025, 16]} />
         </mesh>
       ))}
@@ -175,7 +251,13 @@ export function Daybed({ item }: { item: FurnitureItem }) {
         <B s={[w * 0.24, boxH - 2 * T - 0.006, T]} p={[-w / 2 + T + w * 0.12, boxH / 2, d / 2 - T / 2]} m={body} />
         <FingerHole p={[-w / 2 + T + w * 0.12, boxH * 0.72, d / 2 + 0.001]} vertical={false} />
         {/* middle: books */}
-        <Books w={w * 0.26} h={boxH - 2 * T - 0.01} d={d - 0.1} seed={item.id} p={[-w / 2 + T + w * 0.24 + w * 0.13, T, 0.02]} />
+        <Books
+          w={w * 0.26}
+          h={boxH - 2 * T - 0.01}
+          d={d - 0.1}
+          seed={item.id}
+          p={[-w / 2 + T + w * 0.24 + w * 0.13, T, 0.02]}
+        />
         {/* right: flat-file chest */}
         {item.options.drawers !== false && (
           <group position={[w / 2 - T - chestW / 2, T, d / 2 - 0.02]}>
@@ -185,7 +267,12 @@ export function Daybed({ item }: { item: FurnitureItem }) {
               return (
                 <group key={i}>
                   <B s={[chestW - 0.012, dh - 0.006, 0.004]} p={[0, dh * (i + 0.5), 0.002]} m={steel} />
-                  <B s={[0.08, 0.008, 0.012]} p={[0, dh * (i + 0.5), 0.008]} m={mat('#d9dadb', 'metal')} edges={false} />
+                  <B
+                    s={[0.08, 0.008, 0.012]}
+                    p={[0, dh * (i + 0.5), 0.008]}
+                    m={mat('#d9dadb', 'metal')}
+                    edges={false}
+                  />
                 </group>
               )
             })}
@@ -195,7 +282,13 @@ export function Daybed({ item }: { item: FurnitureItem }) {
         <B s={[w - 0.02, 0.12, d - 0.02]} p={[0, boxH + 0.06, 0]} m={mat(item.finish.fabric, 'fabric')} />
         {item.options.pillows !== false &&
           [-0.55, 0, 0.55].map((x, i) => (
-            <B key={i} s={[0.55, 0.42, 0.14]} p={[x * (w / 2), boxH + 0.12 + 0.2, -d / 2 + 0.12]} r={[-0.18, 0, 0]} m={mat(i === 1 ? '#e8e6e1' : item.finish.fabric, 'fabric')} />
+            <B
+              key={i}
+              s={[0.55, 0.42, 0.14]}
+              p={[x * (w / 2), boxH + 0.12 + 0.2, -d / 2 + 0.12]}
+              r={[-0.18, 0, 0]}
+              m={mat(i === 1 ? '#e8e6e1' : item.finish.fabric, 'fabric')}
+            />
           ))}
       </group>
     </group>

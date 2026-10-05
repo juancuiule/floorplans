@@ -102,7 +102,10 @@ function LampModel({ item }: { item: LampItem }) {
             const foot = new THREE.Vector3(Math.sin(a) * 0.3, 0, Math.cos(a) * 0.3)
             const mid = foot.clone().lerp(top, 0.5)
             const len = foot.distanceTo(top)
-            const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), top.clone().sub(foot).normalize())
+            const q = new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              top.clone().sub(foot).normalize(),
+            )
             return (
               <mesh key={i} position={mid} quaternion={q} material={wood} castShadow>
                 <cylinderGeometry args={[0.012, 0.016, len, 8]} />
@@ -295,7 +298,12 @@ function ExitCeiling({ item }: { item: LampItem }) {
     const map = exitSignTexture(item.color)
     const face = new THREE.MeshStandardMaterial({ map, emissiveMap: map, emissive: '#ffffff', roughness: 0.35 })
     const milk = new THREE.MeshStandardMaterial({ color: '#f5f1e8', emissive: '#fff4e2', roughness: 0.35 })
-    const cap = new THREE.MeshStandardMaterial({ color: '#eeebe4', emissive: '#fff1dc', roughness: 0.4, metalness: 0.2 })
+    const cap = new THREE.MeshStandardMaterial({
+      color: '#eeebe4',
+      emissive: '#fff1dc',
+      roughness: 0.4,
+      metalness: 0.2,
+    })
     return { face, milk, cap }
   }, [item.color])
   useEffect(() => {
@@ -330,7 +338,15 @@ function ExitCeiling({ item }: { item: LampItem }) {
       <mesh position={[0, y - H / 2 - 0.008, 0]} material={mats.cap}>
         <boxGeometry args={[W + 0.02, 0.016, D + 0.02]} />
       </mesh>
-      {item.on && evening && <pointLight position={[0, y - H / 2 - 0.14, 0]} intensity={LAMPS.exitCeiling.power * item.brightness} distance={3.5} decay={2} color="#ffe6d6" />}
+      {item.on && evening && (
+        <pointLight
+          position={[0, y - H / 2 - 0.14, 0]}
+          intensity={LAMPS.exitCeiling.power * item.brightness}
+          distance={3.5}
+          decay={2}
+          color="#ffe6d6"
+        />
+      )}
     </group>
   )
 }
@@ -380,7 +396,15 @@ function ExitCube({ item }: { item: LampItem }) {
       <mesh position={[0.05, -0.12, 0.03]} material={metal}>
         <cylinderGeometry args={[0.002, 0.002, 0.14, 4]} />
       </mesh>
-      {item.on && evening && <pointLight position={[0, 0, 0.3]} intensity={LAMPS.exit.power * item.brightness} distance={3} decay={2} color="#ff3b2a" />}
+      {item.on && evening && (
+        <pointLight
+          position={[0, 0, 0.3]}
+          intensity={LAMPS.exit.power * item.brightness}
+          distance={3}
+          decay={2}
+          color="#ff3b2a"
+        />
+      )}
     </group>
   )
 }

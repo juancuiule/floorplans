@@ -30,7 +30,11 @@ function buildGeometry(): THREE.BufferGeometry {
     const f = wallFrame(w)
     for (const p of wallPieces(w, 0)) {
       const s = (p.s0 + p.s1) / 2
-      box([p.s1 - p.s0, p.y1 - p.y0, w.thickness], [f.origin[0] + f.u[0] * s, (p.y0 + p.y1) / 2, f.origin[1] + f.u[1] * s], f.rotY)
+      box(
+        [p.s1 - p.s0, p.y1 - p.y0, w.thickness],
+        [f.origin[0] + f.u[0] * s, (p.y0 + p.y1) / 2, f.origin[1] + f.u[1] * s],
+        f.rotY,
+      )
     }
   }
 
@@ -72,8 +76,11 @@ function buildGeometry(): THREE.BufferGeometry {
 
 export function SunOccluders() {
   const ref = useRef<THREE.Mesh>(null)
-  const geometry = useMemo(buildGeometry, [])
-  const material = useMemo(() => new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide }), [])
+  const geometry = useMemo(() => buildGeometry(), [])
+  const material = useMemo(
+    () => new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide }),
+    [],
+  )
   useEffect(() => {
     const mesh = ref.current!
     shadowOnly.add(mesh)

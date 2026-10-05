@@ -16,5 +16,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["tests/unit", "vitest.config.ts"]
+  "include": ["tests/unit", "vitest.config.ts", "src/workspace.d.ts"]
 }

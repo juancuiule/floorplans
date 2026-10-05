@@ -45,7 +45,8 @@ function sunCoords(jd: number) {
   const l0 = mod(280.46646 + t * (36000.76983 + t * 0.0003032), 360)
   const m = 357.52911 + t * (35999.05029 - 0.0001537 * t)
   const e = 0.016708634 - t * (0.000042037 + 0.0000001267 * t)
-  const c = sin(m) * (1.914602 - t * (0.004817 + 0.000014 * t)) + sin(2 * m) * (0.019993 - 0.000101 * t) + sin(3 * m) * 0.000289
+  const c =
+    sin(m) * (1.914602 - t * (0.004817 + 0.000014 * t)) + sin(2 * m) * (0.019993 - 0.000101 * t) + sin(3 * m) * 0.000289
   const omega = 125.04 - 1934.136 * t
   const lambda = l0 + c - 0.00569 - 0.00478 * sin(omega)
   const eps0 = 23 + (26 + (21.448 - t * (46.815 + t * (0.00059 - t * 0.001813))) / 60) / 60
@@ -54,7 +55,11 @@ function sunCoords(jd: number) {
   const y = tan(eps / 2) ** 2
   const eqTime =
     (4 / RAD) *
-    (y * sin(2 * l0) - 2 * e * sin(m) + 4 * e * y * sin(m) * cos(2 * l0) - 0.5 * y * y * sin(4 * l0) - 1.25 * e * e * sin(2 * m))
+    (y * sin(2 * l0) -
+      2 * e * sin(m) +
+      4 * e * y * sin(m) * cos(2 * l0) -
+      0.5 * y * y * sin(4 * l0) -
+      1.25 * e * e * sin(2 * m))
   return { declination, eqTime }
 }
 
@@ -64,7 +69,8 @@ function refraction(elevation: number): number {
   const te = tan(elevation)
   let arcsec: number
   if (elevation > 5) arcsec = 58.1 / te - 0.07 / te ** 3 + 0.000086 / te ** 5
-  else if (elevation > -0.575) arcsec = 1735 + elevation * (-518.2 + elevation * (103.4 + elevation * (-12.79 + elevation * 0.711)))
+  else if (elevation > -0.575)
+    arcsec = 1735 + elevation * (-518.2 + elevation * (103.4 + elevation * (-12.79 + elevation * 0.711)))
   else arcsec = -20.772 / te
   return arcsec / 3600
 }

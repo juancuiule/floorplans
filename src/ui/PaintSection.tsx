@@ -7,7 +7,7 @@ import { useActiveShell, WALL_LABELS } from '../project/structure'
 import { Field, Section, Swatches } from './controls'
 import { Icon } from './icons'
 import './paint.css'
-import { useUi } from './uiStore'
+import { useEdit } from '../decor/edit'
 
 // Wall colors: a base color for every wall, the ceiling, and each side of each
 // wall on its own (split by the room it faces). Faces can be painted from the
@@ -19,6 +19,7 @@ const CEILINGS = [{ label: 'Ceiling white', color: '#f7f6f2' }, ...PAINTS]
 
 const nameOf = (color: string) => PALETTE.find((p) => p.color === color)?.label ?? 'Custom'
 
+const setBrush = (paintBrush: string | null) => useEdit.getState().set({ paintBrush })
 export function PaintSection() {
   const f = useDecor((s) => s.finishes)
   const set = useDecor((s) => s.setFinishes)
@@ -36,8 +37,7 @@ export function PaintSection() {
     return [...by.values()].sort((a, b) => length(b) - length(a))
   }, [faces])
   const painted = faces.filter((x) => f.paint[x.id]).length
-  const brush = useUi((s) => s.paintBrush)
-  const setBrush = useUi((s) => s.setPaintBrush)
+  const brush = useEdit((s) => s.paintBrush)
   const [open, setOpen] = useState<string | null>(null)
 
   // Esc puts the brush down; leaving the Room tab does too.
@@ -52,8 +52,8 @@ export function PaintSection() {
       window.removeEventListener('keydown', key)
       delete document.body.dataset.brush
     }
-  }, [brush, setBrush])
-  useEffect(() => () => setBrush(null), [setBrush])
+  }, [brush])
+  useEffect(() => () => setBrush(null), [])
 
   return (
     <Section title="Paint">
@@ -65,7 +65,12 @@ export function PaintSection() {
       </Field>
 
       <div className="paint-brush" data-on={brush !== null || undefined}>
-        <button type="button" className="btn" aria-pressed={brush !== null} onClick={() => setBrush(brush === null ? PALETTE[7]?.color ?? '#9fae95' : null)}>
+        <button
+          type="button"
+          className="btn"
+          aria-pressed={brush !== null}
+          onClick={() => setBrush(brush === null ? (PALETTE[7]?.color ?? '#9fae95') : null)}
+        >
           <Icon name="brush" size={15} />
           {brush === null ? 'Paint walls by clicking' : 'Done painting'}
         </button>
@@ -74,7 +79,12 @@ export function PaintSection() {
             <p className="hint-text">Click a wall in the room to paint that side. Esc when you’re done.</p>
             <Field label="Brush" value={brush === 'base' ? 'Base color (erase)' : nameOf(brush)}>
               <Swatches value={brush === 'base' ? f.wallPaint : brush} colors={PALETTE} onChange={setBrush} />
-              <button type="button" className="btn ghost small" aria-pressed={brush === 'base'} onClick={() => setBrush('base')}>
+              <button
+                type="button"
+                className="btn ghost small"
+                aria-pressed={brush === 'base'}
+                onClick={() => setBrush('base')}
+              >
                 Erase (back to the base color)
               </button>
             </Field>
@@ -101,14 +111,27 @@ export function PaintSection() {
                 const expanded = open === face.id
                 return (
                   <li key={face.id} className="paint-face" data-face={face.id}>
-                    <button type="button" className="paint-face-row" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : face.id)}>
-                      <span className="paint-chip" style={{ background: color ?? f.wallPaint }} data-base={!color || undefined} />
+                    <button
+                      type="button"
+                      className="paint-face-row"
+                      aria-expanded={expanded}
+                      onClick={() => setOpen(expanded ? null : face.id)}
+                    >
+                      <span
+                        className="paint-chip"
+                        style={{ background: color ?? f.wallPaint }}
+                        data-base={!color || undefined}
+                      />
                       <span className="paint-face-name">{label}</span>
                       <span className="paint-face-value">{color ? nameOf(color) : 'Base'}</span>
                     </button>
                     {expanded && (
                       <div className="paint-face-edit">
-                        <Swatches value={color ?? f.wallPaint} colors={PALETTE} onChange={(c) => paintFace(face.id, c)} />
+                        <Swatches
+                          value={color ?? f.wallPaint}
+                          colors={PALETTE}
+                          onChange={(c) => paintFace(face.id, c)}
+                        />
                         {color && (
                           <button type="button" className="btn ghost small" onClick={() => paintFace(face.id, null)}>
                             Use the base color

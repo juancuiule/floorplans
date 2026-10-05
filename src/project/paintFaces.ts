@@ -27,7 +27,11 @@ const PROBE = 0.06
 /** Faces shorter than this (a sliver past a corner) are not worth a row. */
 const MIN_LENGTH = 0.15
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'room'
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'room'
 
 /** Rooms that share a name (the bathroom drawn as two rectangles) paint as one. */
 function roomKey(r: Room) {
@@ -68,7 +72,10 @@ export function paintFaces(walls: Wall[], rooms: Room[] = plan.shell.rooms): Pai
         if (s1 - s0 < MIN_LENGTH) continue
         const key = roomKey(r)
         const cur = ranges.get(key)
-        ranges.set(key, cur ? { name: r.name, s0: Math.min(cur.s0, s0), s1: Math.max(cur.s1, s1) } : { name: r.name, s0, s1 })
+        ranges.set(
+          key,
+          cur ? { name: r.name, s0: Math.min(cur.s0, s0), s1: Math.max(cur.s1, s1) } : { name: r.name, s0, s1 },
+        )
       }
       for (const [room, { name, s0, s1 }] of ranges) {
         out.push({ id: `${w.id}:${side > 0 ? '+' : '-'}:${room}`, wall: w.id, side, s0, s1, room, roomName: name })
@@ -79,7 +86,14 @@ export function paintFaces(walls: Wall[], rooms: Room[] = plan.shell.rooms): Pai
 }
 
 /** The face under a point on a wall's surface, from the normal of the hit. */
-export function faceAt(faces: PaintFace[], walls: Wall[], wallId: string, x: number, z: number, normal: [number, number]): PaintFace | null {
+export function faceAt(
+  faces: PaintFace[],
+  walls: Wall[],
+  wallId: string,
+  x: number,
+  z: number,
+  normal: [number, number],
+): PaintFace | null {
   const w = walls.find((v) => v.id === wallId)
   if (!w) return null
   const f = wallFrame(w)

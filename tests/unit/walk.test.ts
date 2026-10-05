@@ -6,7 +6,12 @@ import type { Vec2 } from '../../src/model/types'
 import { pushOut, rayHit } from '../../src/plan/obstacles'
 import { BODY_RADIUS, ENTRY_SPOT, insideFlat, resolve, walk, walkObstacles } from '../../src/plan/walk'
 
-const piece = (type: FurnitureType, at: [number, number, number], rotation = 0, size = FURNITURE[type].size): FurnitureItem => ({
+const piece = (
+  type: FurnitureType,
+  at: [number, number, number],
+  rotation = 0,
+  size = FURNITURE[type].size,
+): FurnitureItem => ({
   kind: 'furniture',
   id: `f-${type}`,
   type,

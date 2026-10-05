@@ -1,8 +1,27 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { COLLECTION_SPECIES, DEFAULT_POT_SIZE, FRAME_COLORS, FRAME_STYLES, LAMPS, MAT_WIDTHS, PLANTS, POT_SIZES, POTS, SIZE_PRESETS, WARMTH, warmthColor } from '../../src/decor/catalog'
-import { BODY_FINISHES, FABRIC_FINISHES, FURNITURE, FURNITURE_GROUPS, METAL_FINISHES } from '../../src/decor/furnitureCatalog'
+import {
+  COLLECTION_SPECIES,
+  DEFAULT_POT_SIZE,
+  FRAME_COLORS,
+  FRAME_STYLES,
+  LAMPS,
+  MAT_WIDTHS,
+  PLANTS,
+  POT_SIZES,
+  POTS,
+  SIZE_PRESETS,
+  WARMTH,
+  warmthColor,
+} from '../../src/decor/catalog'
+import {
+  BODY_FINISHES,
+  FABRIC_FINISHES,
+  FURNITURE,
+  FURNITURE_GROUPS,
+  METAL_FINISHES,
+} from '../../src/decor/furnitureCatalog'
 import type { FurnitureType } from '../../src/model/decor'
 
 const HEX = /^#[0-9a-f]{6}$/i
@@ -69,7 +88,7 @@ describe('furniture catalog', () => {
   })
 
   it('every furniture type and lamp has a line icon', async () => {
-    const { FURNITURE_ICON, LAMP_ICON } = await import('../../src/ui/icons')
+    const { FURNITURE_ICON, LAMP_ICON } = await import('../../src/ui/itemIcons')
     for (const t of TYPES) expect(FURNITURE_ICON[t], t).toBeTruthy()
     for (const t of Object.keys(LAMPS)) expect(LAMP_ICON[t as keyof typeof LAMP_ICON], t).toBeTruthy()
   })
@@ -78,7 +97,16 @@ describe('furniture catalog', () => {
     const { placeAt } = await import('../../src/decor/placement')
     const THREE = await import('three')
     const hit = { point: new THREE.Vector3(4.5, 0, 0.3), normal: new THREE.Vector3(0, 1, 0), kind: 'up' as const }
-    const piece = (type: FurnitureType) => ({ kind: 'furniture' as const, id: 'x', type, at: [0, 0, 0] as [number, number, number], rotation: 0, size: [...FURNITURE[type].size] as [number, number, number], finish: FURNITURE[type].finish, options: {} })
+    const piece = (type: FurnitureType) => ({
+      kind: 'furniture' as const,
+      id: 'x',
+      type,
+      at: [0, 0, 0] as [number, number, number],
+      rotation: 0,
+      size: [...FURNITURE[type].size] as [number, number, number],
+      finish: FURNITURE[type].finish,
+      options: {},
+    })
     for (const t of ['loftBed', 'windowBench', 'balconyBench', 'planterWall'] as FurnitureType[]) {
       const patch = placeAt(piece(t), hit) as { at: number[] }
       // Snapped flush against the bathroom-side wall (z = 0): the back sits on it.
@@ -100,7 +128,11 @@ describe('furniture catalog', () => {
   })
 
   it('groups the panel shows are all in use', () => {
-    for (const g of FURNITURE_GROUPS) expect(TYPES.some((t) => FURNITURE[t].group === g), g).toBe(true)
+    for (const g of FURNITURE_GROUPS)
+      expect(
+        TYPES.some((t) => FURNITURE[t].group === g),
+        g,
+      ).toBe(true)
   })
 })
 

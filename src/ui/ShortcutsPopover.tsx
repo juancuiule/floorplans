@@ -1,8 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { Icon } from './icons'
-
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
-export const MOD = isMac ? '⌘' : 'Ctrl'
+import { MOD } from './format'
 
 const GROUPS: { title: string; items: [keys: string[][], what: string][] }[] = [
   {
@@ -15,7 +13,13 @@ const GROUPS: { title: string; items: [keys: string[][], what: string][] }[] = [
       [[['←', '↑', '→', '↓']], 'Nudge the selection'],
       [[['Delete']], 'Delete the selection'],
       [[[MOD, 'D']], 'Duplicate'],
-      [[[MOD, 'C'], [MOD, 'V']], 'Copy and paste'],
+      [
+        [
+          [MOD, 'C'],
+          [MOD, 'V'],
+        ],
+        'Copy and paste',
+      ],
       [[[MOD, 'Z']], 'Undo'],
       [[['Shift', MOD, 'Z']], 'Redo'],
     ],
@@ -26,13 +30,37 @@ const GROUPS: { title: string; items: [keys: string[][], what: string][] }[] = [
       [[['Shift', 'Click']], 'Add to or remove from the selection'],
       [[['Shift', 'Drag']], 'Select with a rectangle (drag on the room)'],
       [[[MOD, 'A']], 'Select everything on the same wall (or of the same kind)'],
-      [[[MOD, 'G'], ['Shift', MOD, 'G']], 'Group, ungroup'],
+      [
+        [
+          [MOD, 'G'],
+          ['Shift', MOD, 'G'],
+        ],
+        'Group, ungroup',
+      ],
       [[['Alt', 'Click']], 'Pick one piece of a group (or double-click it)'],
-      [[['Alt', 'A'], ['Alt', 'D']], 'Align left, right'],
+      [
+        [
+          ['Alt', 'A'],
+          ['Alt', 'D'],
+        ],
+        'Align left, right',
+      ],
       [[['Alt', 'H']], 'Align centers'],
-      [[['Alt', 'W'], ['Alt', 'S']], 'Align tops, bottoms'],
+      [
+        [
+          ['Alt', 'W'],
+          ['Alt', 'S'],
+        ],
+        'Align tops, bottoms',
+      ],
       [[['Alt', 'V']], 'Align middles'],
-      [[['Alt', 'Shift', 'H'], ['Alt', 'Shift', 'V']], 'Distribute across, or up and down, with equal gaps'],
+      [
+        [
+          ['Alt', 'Shift', 'H'],
+          ['Alt', 'Shift', 'V'],
+        ],
+        'Distribute across, or up and down, with equal gaps',
+      ],
     ],
   },
   {
@@ -69,21 +97,33 @@ const GROUPS: { title: string; items: [keys: string[][], what: string][] }[] = [
  * opens and back to the trigger when it closes (Esc, the close button, or a
  * click outside).
  */
-export function ShortcutsPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: RefObject<HTMLButtonElement | null> }) {
+export function ShortcutsPopover({
+  onClose,
+  triggerRef,
+}: {
+  onClose: () => void
+  triggerRef: RefObject<HTMLButtonElement | null>
+}) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    ref.current?.focus()
+    const panel = ref.current
+    panel?.focus()
     const trigger = triggerRef.current
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node
-      if (!ref.current?.contains(t) && !trigger?.contains(t)) onClose()
+      if (!panel?.contains(t) && !trigger?.contains(t)) onClose()
     }
     document.addEventListener('pointerdown', onDown)
     return () => {
       document.removeEventListener('pointerdown', onDown)
       // Return focus only if it would otherwise be lost.
-      if (!document.activeElement || document.activeElement === document.body || ref.current?.contains(document.activeElement)) trigger?.focus()
+      if (
+        !document.activeElement ||
+        document.activeElement === document.body ||
+        panel?.contains(document.activeElement)
+      )
+        trigger?.focus()
     }
   }, [onClose, triggerRef])
 

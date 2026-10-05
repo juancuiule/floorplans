@@ -28,7 +28,8 @@ export interface Box {
  * v is height, and `d` is the wall plane's offset along its outward normal.
  * On the floor: u and v are plan directions (unit [x, z] vectors).
  */
-export type Frame = { kind: 'wall'; facing: Facing; d: number } | { kind: 'floor'; u: [number, number]; v: [number, number] }
+export type Frame =
+  { kind: 'wall'; facing: Facing; d: number } | { kind: 'floor'; u: [number, number]; v: [number, number] }
 
 export const FLOOR_FRAME: Frame = { kind: 'floor', u: [1, 0], v: [0, 1] }
 
@@ -48,7 +49,9 @@ export function wallFrameOf(item: DecorItem): Frame {
 /** Same wall plane: same facing, and within a few centimeters of the same depth. */
 export function onPlane(item: DecorItem, frame: Frame, tol = 0.06): boolean {
   if (frame.kind !== 'wall') return !isWallItem(item) && mountOf(item) === 'surface'
-  return isWallItem(item) && 'facing' in item && item.facing === frame.facing && Math.abs(wallDepth(item) - frame.d) < tol
+  return (
+    isWallItem(item) && 'facing' in item && item.facing === frame.facing && Math.abs(wallDepth(item) - frame.d) < tol
+  )
 }
 
 /** Width and height on the wall, and where the box sits relative to `at` (center or bottom). */

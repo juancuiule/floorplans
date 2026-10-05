@@ -5,19 +5,23 @@
   "description": "A real-time 3D model of an apartment for planning the interior",
   "repository": "github:juancuiule/floorplan",
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22.18"
   },
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
     "preview": "vite preview",
+    "lint": "oxlint --deny-warnings",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json",
     "test": "vitest run",
-    "test:unit": "vitest run",
     "test:watch": "vitest",
-    "test:types": "tsc -p tsconfig.test.json",
-    "test:e2e": "node tests/e2e/smoke.mjs"
+    "test:e2e": "playwright test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "start": "node server/main.ts",
+    "space:import": "node scripts/import-workspace.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -31,6 +35,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
@@ -39,8 +44,10 @@
     "jsdom": "^30.1.1",
     "oxlint": "^1.81.0",
     "playwright": "^1.63.0",
+    "prettier": "3.9.9",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"
-  }
+  },
+  "packageManager": "pnpm@11.22.0"
 }

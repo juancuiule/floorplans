@@ -1,0 +1,214 @@
+/* The pages around the 3D app: home, a space's plans, the floor plan editor, errors. */
+
+.page {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.page-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px var(--gutter) 64px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.page h1 {
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+
+.page h2 {
+  font-size: 15px;
+  margin: 36px 0 12px;
+}
+
+.page .lede {
+  color: var(--muted);
+  margin: 0;
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: inherit;
+  text-decoration: none;
+  min-height: 104px;
+}
+
+a.card:hover,
+button.card:hover {
+  background: var(--surface);
+}
+
+button.card {
+  border: 0;
+  text-align: left;
+}
+
+.card-title {
+  font-weight: 600;
+}
+
+.card-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card-actions {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.card.new {
+  border: 1px dashed var(--line-strong);
+  box-shadow: none;
+  background: transparent;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--hover);
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.primary:hover {
+  background: #45423c;
+}
+
+.btn.danger {
+  color: var(--danger);
+}
+
+.btn:focus-visible,
+.card:focus-visible,
+.page input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.page input[type='text'] {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.notice {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notice.error {
+  color: var(--danger);
+}
+
+.title-input {
+  font: inherit;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 0 6px;
+  margin: 0 0 8px -7px;
+  width: 100%;
+  max-width: 560px;
+}
+
+.title-input:hover {
+  border-color: var(--line);
+}
+
+.title-input:focus {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  outline: none;
+}
+
+.danger-zone {
+  margin-top: 48px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.danger-zone h2 {
+  color: var(--danger);
+}
+
+.danger-zone .lede {
+  margin-bottom: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

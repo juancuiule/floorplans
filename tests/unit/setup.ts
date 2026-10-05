@@ -1,3 +1,11 @@
+import { setScope } from '../../src/decor/api'
+import { openPlan } from '../../src/project/plan'
+import { PLANS, TEST_SPACE } from './plans'
+
+// Every test file starts with the monoambiente plan open, as src/main.tsx would.
+openPlan(PLANS.monoambiente)
+setScope(TEST_SPACE, 'monoambiente')
+
 // jsdom has no 2D canvas. The procedural textures (src/scene/patterns.ts) only
 // need the calls to succeed, so give them a recording fake instead of a real canvas dep.
 if (typeof HTMLCanvasElement !== 'undefined') {

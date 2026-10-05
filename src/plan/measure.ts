@@ -46,7 +46,11 @@ export interface Snapped {
  * line within `tol` (both at once lands on a corner), y onto the floor, the
  * ceiling or a solid's top. Earlier endpoints win over everything.
  */
-export function snapPoint(p: Vec3, lines: EdgeLine[], opts: { tops?: Obstacle[]; points?: Vec3[]; tol?: number } = {}): Snapped {
+export function snapPoint(
+  p: Vec3,
+  lines: EdgeLine[],
+  opts: { tops?: Obstacle[]; points?: Vec3[]; tol?: number } = {},
+): Snapped {
   const tol = opts.tol ?? SNAP
   for (const q of opts.points ?? []) {
     if (Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) < tol) return { point: [...q], snapped: true }

@@ -135,9 +135,29 @@ function Dimension({ m, preview }: { m: Measurement; preview?: boolean }) {
   const ticks = useMemo(() => endTicks(m.a, m.b), [m.a, m.b])
   return (
     <group>
-      <Line points={[m.a, m.b]} color={INK} lineWidth={hovered ? 3 : 2} dashed={preview} dashSize={0.04} gapSize={0.03} depthTest={false} transparent renderOrder={11} raycast={noRaycast} />
+      <Line
+        points={[m.a, m.b]}
+        color={INK}
+        lineWidth={hovered ? 3 : 2}
+        dashed={preview}
+        dashSize={0.04}
+        gapSize={0.03}
+        depthTest={false}
+        transparent
+        renderOrder={11}
+        raycast={noRaycast}
+      />
       {ticks.map((t, i) => (
-        <Line key={i} points={t} color={INK} lineWidth={2} depthTest={false} transparent renderOrder={11} raycast={noRaycast} />
+        <Line
+          key={i}
+          points={t}
+          color={INK}
+          lineWidth={2}
+          depthTest={false}
+          transparent
+          renderOrder={11}
+          raycast={noRaycast}
+        />
       ))}
       <Html position={mid} center zIndexRange={[20, 10]} className={`measure-label${preview ? ' preview' : ''}`}>
         <span
@@ -165,7 +185,10 @@ function endTicks(a: Vec3, b: Vec3): [Vec3, Vec3][] {
   const dir = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2])
   if (dir.lengthSq() < 1e-8) return []
   dir.normalize()
-  const across = new THREE.Vector3().crossVectors(dir, Math.abs(dir.y) > 0.9 ? side : up).normalize().multiplyScalar(0.05)
+  const across = new THREE.Vector3()
+    .crossVectors(dir, Math.abs(dir.y) > 0.9 ? side : up)
+    .normalize()
+    .multiplyScalar(0.05)
   return [a, b].map((p) => [
     [p[0] - across.x, p[1] - across.y, p[2] - across.z],
     [p[0] + across.x, p[1] + across.y, p[2] + across.z],

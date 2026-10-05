@@ -1,65 +1,16 @@
-import { memo, useMemo, useRef, useState, type DragEvent } from 'react'
-import { create } from 'zustand'
+import { memo, useMemo, useRef, useState } from 'react'
 import { FRAME_COLORS, SIZE_PRESETS } from '../decor/catalog'
-import { newId, useDecor, type LibraryImage } from '../decor/store'
-import { unplacedAt } from '../scene/decor/DecorLayer'
+import type { LibraryImage } from '../decor/api'
+import { newId } from '../decor/clone'
+import { useDecor } from '../decor/store'
 import { matches } from './format'
 import { Icon } from './icons'
 import { NoResults } from './Libraries'
+import { unplacedAt } from '../model/decor'
+import { ACCEPT, uploadFiles, useUploads } from './uploads'
 
-// ---------- uploads ----------
-
-const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/avif'
-const EXT = /\.(png|jpe?g|webp|gif|avif)$/i
-const MAX_MB = 30
-
-interface UploadState {
-  total: number
-  done: number
-  current: string | null
-  errors: { id: number; text: string }[]
-  dismiss: (id: number) => void
-}
-
-export const useUploads = create<UploadState>((set) => ({
-  total: 0,
-  done: 0,
-  current: null,
-  errors: [],
-  dismiss: (id) => set((s) => ({ errors: s.errors.filter((e) => e.id !== id) })),
-}))
-
-let errorId = 0
-const fail = (text: string) => useUploads.setState((s) => ({ errors: [...s.errors, { id: ++errorId, text }] }))
-
-/** Checks and uploads files one at a time, reporting progress and per-file errors. */
-export async function uploadFiles(files: File[]) {
-  const ok: File[] = []
-  for (const f of files) {
-    if (!EXT.test(f.name)) fail(`“${f.name}” is not a supported image. Use PNG, JPEG, WebP, GIF or AVIF.`)
-    else if (f.size > MAX_MB * 1024 * 1024) fail(`“${f.name}” is larger than ${MAX_MB} MB. Resize it and try again.`)
-    else ok.push(f)
-  }
-  if (ok.length === 0) return
-  const upload = useDecor.getState().upload
-  useUploads.setState((s) => ({ total: s.total - s.done + ok.length, done: 0 }))
-  for (const f of ok) {
-    useUploads.setState({ current: f.name })
-    try {
-      const img = await upload(f)
-      if (!img) fail(`Unable to upload “${f.name}”. ${useDecor.getState().error ?? ''} Try again.`.replace(/\s+/g, ' '))
-    } catch {
-      fail(`Unable to upload “${f.name}”. Check that the dev server is running, then try again.`)
-    }
-    useUploads.setState((s) => ({ done: s.done + 1 }))
-  }
-  useUploads.setState({ total: 0, done: 0, current: null })
-}
-
-/** True when a drag carries files (not text or a link). */
-export const dragHasFiles = (e: DragEvent) => [...e.dataTransfer.types].includes('Files')
-
-// ---------- library ----------
+// The artwork library: this space's own images (never shared with other spaces), searchable, and a drop
+// zone for uploading more.
 
 function naturalSize(url: string, el: HTMLImageElement | null): Promise<[number, number]> {
   if (el?.complete && el.naturalWidth) return Promise.resolve([el.naturalWidth, el.naturalHeight])
@@ -111,7 +62,9 @@ export function ArtworkLibrary({ query, onClear }: { query: string; onClear: () 
       {library.length === 0 ? (
         <div className="empty">
           <p className="empty-title">No images yet</p>
-          <p className="note">Upload a photo or a print to hang it on a wall. Files also appear here when you add them to public/artwork.</p>
+          <p className="note">
+            Upload a photo or a print to hang it on a wall. Your images stay in this space: other spaces never see them.
+          </p>
         </div>
       ) : shown.length === 0 ? (
         <NoResults query={query} noun="artwork" onClear={onClear} />
@@ -131,12 +84,24 @@ export function ArtworkLibrary({ query, onClear }: { query: string; onClear: () 
   )
 }
 
-const Thumb = memo(function Thumb({ img, onPick }: { img: LibraryImage; onPick: (url: string, el: HTMLImageElement | null) => void }) {
+const Thumb = memo(function Thumb({
+  img,
+  onPick,
+}: {
+  img: LibraryImage
+  onPick: (url: string, el: HTMLImageElement | null) => void
+}) {
   const [loaded, setLoaded] = useState(false)
   const ref = useRef<HTMLImageElement>(null)
   return (
     <li>
-      <button type="button" className={`thumb${loaded ? ' loaded' : ''}`} title={img.name} aria-label={`Hang ${img.name}`} onClick={() => onPick(img.url, ref.current)}>
+      <button
+        type="button"
+        className={`thumb${loaded ? ' loaded' : ''}`}
+        title={img.name}
+        aria-label={`Hang ${img.name}`}
+        onClick={() => onPick(img.url, ref.current)}
+      >
         <img ref={ref} src={img.url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)} />
       </button>
     </li>

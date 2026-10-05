@@ -33,7 +33,15 @@ declare global {
     __invalidate?: () => void
     /** Dev only: the scene graph, for scripts that inspect it. */
     __scene?: THREE.Scene
-    __stats?: { calls: number; triangles: number; lines: number; points: number; programs: number; geometries: number; textures: number }
+    __stats?: {
+      calls: number
+      triangles: number
+      lines: number
+      points: number
+      programs: number
+      geometries: number
+      textures: number
+    }
   }
 }
 
@@ -122,12 +130,19 @@ const SUN_DISTANCE = 20
 
 /** Fits the orthographic shadow camera tightly around BOUNDS as seen from the sun, for sharp shadows. */
 function fitShadowCamera(light: THREE.DirectionalLight) {
-  const view = new THREE.Matrix4().lookAt(light.position, ROOM_CENTER, THREE.Object3D.DEFAULT_UP).setPosition(light.position).invert()
+  const view = new THREE.Matrix4()
+    .lookAt(light.position, ROOM_CENTER, THREE.Object3D.DEFAULT_UP)
+    .setPosition(light.position)
+    .invert()
   const min = new THREE.Vector3(Infinity, Infinity, Infinity)
   const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity)
   const p = new THREE.Vector3()
   for (let i = 0; i < 8; i++) {
-    p.set(i & 1 ? BOUNDS.max.x : BOUNDS.min.x, i & 2 ? BOUNDS.max.y : BOUNDS.min.y, i & 4 ? BOUNDS.max.z : BOUNDS.min.z).applyMatrix4(view)
+    p.set(
+      i & 1 ? BOUNDS.max.x : BOUNDS.min.x,
+      i & 2 ? BOUNDS.max.y : BOUNDS.min.y,
+      i & 4 ? BOUNDS.max.z : BOUNDS.min.z,
+    ).applyMatrix4(view)
     min.min(p)
     max.max(p)
   }
@@ -206,7 +221,11 @@ function Lights() {
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
       />
-      {evening && downlights && project.objects.filter((o) => o.type === 'downlight').map((o) => <Downlight key={o.id} at={ceilingFitting(o.position, structure)} />)}
+      {evening &&
+        downlights &&
+        project.objects
+          .filter((o) => o.type === 'downlight')
+          .map((o) => <Downlight key={o.id} at={ceilingFitting(o.position, structure)} />)}
       <SunOccluders />
     </>
   )
@@ -221,7 +240,18 @@ function Downlight({ at }: { at: Vec3 }) {
     scene.add(target)
     return () => void scene.remove(target)
   }, [scene, target, at])
-  return <spotLight position={[at[0], at[1] - 0.02, at[2]]} target={target} angle={0.85} penumbra={0.7} intensity={4} decay={2} distance={6} color="#ffe6c8" />
+  return (
+    <spotLight
+      position={[at[0], at[1] - 0.02, at[2]]}
+      target={target}
+      angle={0.85}
+      penumbra={0.7}
+      intensity={4}
+      decay={2}
+      distance={6}
+      color="#ffe6c8"
+    />
+  )
 }
 
 export function Scene() {

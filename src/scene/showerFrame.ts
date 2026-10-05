@@ -28,7 +28,11 @@ const EDGE_REACH = 0.05
 export function showerFrame(tray: SceneObject, bulges: Bulge[]): ShowerFrame {
   const [w, h, d] = tray.size ?? [0.75, 0.06, 0.7]
   const toLocal = new THREE.Matrix4()
-    .compose(new THREE.Vector3(...tray.position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(tray.rotation ?? 0)), new THREE.Vector3(1, 1, 1))
+    .compose(
+      new THREE.Vector3(...tray.position),
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(tray.rotation ?? 0)),
+      new THREE.Vector3(1, 1, 1),
+    )
     .invert()
   const tiles = bulges
     .filter((b) => b.material === 'tile')
@@ -40,13 +44,22 @@ export function showerFrame(tray: SceneObject, bulges: Bulge[]): ShowerFrame {
   let z0: number | null = null
   let z1: number | null = null
   for (const b of tiles) {
-    if (overlaps(b.min.z, b.max.z, -d / 2, d / 2) && b.min.x > w / 2 - EDGE_REACH && b.min.x < w / 2 + 0.001) back = Math.min(back ?? Infinity, b.min.x)
+    if (overlaps(b.min.z, b.max.z, -d / 2, d / 2) && b.min.x > w / 2 - EDGE_REACH && b.min.x < w / 2 + 0.001)
+      back = Math.min(back ?? Infinity, b.min.x)
     if (overlaps(b.min.x, b.max.x, -w / 2, w / 2)) {
       if (b.max.z < -d / 2 + EDGE_REACH && b.max.z > -d / 2 - 0.001) z0 = Math.max(z0 ?? -Infinity, b.max.z)
       if (b.min.z > d / 2 - EDGE_REACH && b.min.z < d / 2 + 0.001) z1 = Math.min(z1 ?? Infinity, b.min.z)
     }
   }
-  return { x0: -w / 2, back: back ?? w / 2, z0: z0 ?? -d / 2, z1: z1 ?? d / 2, wallZ0: z0 !== null, wallZ1: z1 !== null, top: h }
+  return {
+    x0: -w / 2,
+    back: back ?? w / 2,
+    z0: z0 ?? -d / 2,
+    z1: z1 ?? d / 2,
+    wallZ0: z0 !== null,
+    wallZ1: z1 !== null,
+    top: h,
+  }
 }
 
 /** Radius, thickness and height (top) of the corner shelf. */
@@ -59,10 +72,29 @@ const SHELF_GAP = 0.0005
  * side tiles, curving out into the shower (toward −x and away from the side
  * wall). It goes in the z0 corner when that side is tiled, else the z1 one.
  */
-export function cornerShelf(f: ShowerFrame): { geometry: THREE.CylinderGeometry; position: Vec3; side: 1 | -1; cornerZ: number } {
+export function cornerShelf(f: ShowerFrame): {
+  geometry: THREE.CylinderGeometry
+  position: Vec3
+  side: 1 | -1
+  cornerZ: number
+} {
   const side = f.wallZ0 || !f.wallZ1 ? 1 : -1
   const cornerZ = side === 1 ? f.z0 : f.z1
   // Cylinder vertices sit at (r·sin θ, r·cos θ): θ in [3π/2, 2π] is the x ≤ 0, z ≥ 0 quarter, [π, 3π/2] the x ≤ 0, z ≤ 0 one.
-  const geometry = new THREE.CylinderGeometry(SHELF.r, SHELF.r, SHELF.t, 24, 1, false, side === 1 ? (3 * Math.PI) / 2 : Math.PI, Math.PI / 2)
-  return { geometry, position: [f.back - SHELF_GAP, SHELF.top - SHELF.t / 2, cornerZ + side * SHELF_GAP], side, cornerZ }
+  const geometry = new THREE.CylinderGeometry(
+    SHELF.r,
+    SHELF.r,
+    SHELF.t,
+    24,
+    1,
+    false,
+    side === 1 ? (3 * Math.PI) / 2 : Math.PI,
+    Math.PI / 2,
+  )
+  return {
+    geometry,
+    position: [f.back - SHELF_GAP, SHELF.top - SHELF.t / 2, cornerZ + side * SHELF_GAP],
+    side,
+    cornerZ,
+  }
 }

@@ -3,15 +3,18 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { FurnitureItem } from '../../../model/decor'
 import { useView } from '../../../store'
-import { MATS, potMaterial } from '../Plant'
+import { MATS, potMaterial } from '../plantMaterials'
 import { buildPlant, seeded } from '../plantGeometry'
-import { B, mat, Rod } from './common'
-import { GLAZES, glazeMaterial, Mug } from './Decor'
+import { B, Rod } from './common'
+import { mat } from './furnitureMaterials'
+import { Mug } from './Decor'
+import { GLAZES, glazeMaterial } from './glaze'
 
 // Wall pieces: origin on the wall surface, y = bottom edge, +z out of the wall.
 
 /** n evenly spaced positions from a to b. */
-const spread = (n: number, a: number, b: number) => Array.from({ length: n }, (_, i) => (n === 1 ? (a + b) / 2 : a + (i * (b - a)) / (n - 1)))
+const spread = (n: number, a: number, b: number) =>
+  Array.from({ length: n }, (_, i) => (n === 1 ? (a + b) / 2 : a + (i * (b - a)) / (n - 1)))
 
 export function GridShelf({ item }: { item: FurnitureItem }) {
   const [w, h, d] = item.size
@@ -24,7 +27,15 @@ export function GridShelf({ item }: { item: FurnitureItem }) {
   return (
     <group>
       {posts.flatMap((x) =>
-        [0.02, d - 0.01].map((z) => <B key={`${x}${z}`} s={[bar, h, bar]} p={[x + (x < 0 ? bar / 2 : x > 0 ? -bar / 2 : 0), h / 2, z]} m={steel} edges={false} />),
+        [0.02, d - 0.01].map((z) => (
+          <B
+            key={`${x}${z}`}
+            s={[bar, h, bar]}
+            p={[x + (x < 0 ? bar / 2 : x > 0 ? -bar / 2 : 0), h / 2, z]}
+            m={steel}
+            edges={false}
+          />
+        )),
       )}
       {Array.from({ length: shelves }, (_, j) => {
         const y = (h - 0.03) * (j / (shelves - 1)) + 0.02
@@ -38,7 +49,12 @@ export function GridShelf({ item }: { item: FurnitureItem }) {
                 const x = -w / 2 + 0.12 + (k + r() * 0.5) * ((w - 0.24) / 4)
                 const tall = r() > 0.5
                 return (
-                  <mesh key={k} position={[x, y + 0.01 + (tall ? 0.08 : 0.03), d / 2]} material={mat(['#f1efe9', '#3b3a37', '#c9b79a', '#9fb6c1'][Math.floor(r() * 4)], 'gloss')} castShadow>
+                  <mesh
+                    key={k}
+                    position={[x, y + 0.01 + (tall ? 0.08 : 0.03), d / 2]}
+                    material={mat(['#f1efe9', '#3b3a37', '#c9b79a', '#9fb6c1'][Math.floor(r() * 4)], 'gloss')}
+                    castShadow
+                  >
                     <cylinderGeometry args={tall ? [0.04, 0.04, 0.16, 18] : [0.08, 0.05, 0.06, 20]} />
                   </mesh>
                 )
@@ -50,7 +66,7 @@ export function GridShelf({ item }: { item: FurnitureItem }) {
   )
 }
 
-export function reededTexture(kind: string) {
+function reededTexture(kind: string) {
   const c = document.createElement('canvas')
   c.width = c.height = 256
   const g = c.getContext('2d')!
@@ -95,13 +111,22 @@ export function UpperCabinets({ item }: { item: FurnitureItem }) {
   const glass = useMemo(() => {
     const map = reededTexture(glassKind)
     map.repeat.set(1, 1)
-    return new THREE.MeshStandardMaterial({ map, transparent: true, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false })
+    return new THREE.MeshStandardMaterial({
+      map,
+      transparent: true,
+      roughness: 0.2,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    })
   }, [glassKind])
   useEffect(() => () => (glass.map?.dispose(), glass.dispose()), [glass])
   const n = Math.max(2, Math.round(w / 0.5))
   const dw = w / n
   const led = item.options.led !== false
-  const ledMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff4e0', emissive: '#ffe2b8', emissiveIntensity: 2 }), [])
+  const ledMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#fff4e0', emissive: '#ffe2b8', emissiveIntensity: 2 }),
+    [],
+  )
   return (
     <group>
       {/* open box with wood shelves inside */}
@@ -120,7 +145,12 @@ export function UpperCabinets({ item }: { item: FurnitureItem }) {
         return (
           <group key={i} position={[cx, 0, z]}>
             {[-1, 1].map((sx) => (
-              <mesh key={sx} position={[sx * (dw / 2 - 0.08), h + 0.04, 0.02]} rotation={[Math.PI / 2, 0, 0]} material={steel}>
+              <mesh
+                key={sx}
+                position={[sx * (dw / 2 - 0.08), h + 0.04, 0.02]}
+                rotation={[Math.PI / 2, 0, 0]}
+                material={steel}
+              >
                 <cylinderGeometry args={[0.025, 0.025, 0.012, 20]} />
               </mesh>
             ))}
@@ -139,7 +169,9 @@ export function UpperCabinets({ item }: { item: FurnitureItem }) {
           <mesh position={[0, -0.004, d - 0.04]} material={ledMat}>
             <boxGeometry args={[w - 0.06, 0.006, 0.012]} />
           </mesh>
-          {evening && <pointLight position={[0, -0.12, d - 0.05]} intensity={1.2} distance={2.2} decay={2} color="#ffe2b8" />}
+          {evening && (
+            <pointLight position={[0, -0.12, d - 0.05]} intensity={1.2} distance={2.2} decay={2} color="#ffe2b8" />
+          )}
         </group>
       )}
     </group>
@@ -186,7 +218,12 @@ function ShelfItems({ w, d, y, seed }: { w: number; d: number; y: number; seed: 
         return (
           <group key={i} position={[x, 0.003, z]}>
             {plant.parts.map((p) => (
-              <mesh key={p.mat} geometry={p.geometry} material={p.mat === 'pot' ? potMaterial('clay') : MATS[p.mat]} castShadow />
+              <mesh
+                key={p.mat}
+                geometry={p.geometry}
+                material={p.mat === 'pot' ? potMaterial('clay') : MATS[p.mat]}
+                castShadow
+              />
             ))}
           </group>
         )
@@ -228,7 +265,12 @@ function Tools({ xs, y, m }: { xs: number[]; y: number; m: THREE.Material }) {
               // Frying pan
               <group position={[0, -0.05, 0.02]}>
                 <Rod a={[0, 0, 0]} b={[0, -0.18, 0]} radius={0.008} m={mat('#2a2a2a', 'matte')} />
-                <mesh position={[0, -0.3, 0]} rotation={[Math.PI / 2, 0, 0]} material={mat('#232323', 'matte')} castShadow>
+                <mesh
+                  position={[0, -0.3, 0]}
+                  rotation={[Math.PI / 2, 0, 0]}
+                  material={mat('#232323', 'matte')}
+                  castShadow
+                >
                   <cylinderGeometry args={[0.12, 0.1, 0.04, 28]} />
                 </mesh>
               </group>
@@ -269,7 +311,13 @@ export function PegGrid({ item }: { item: FurnitureItem }) {
       {Array.from({ length: rows + 1 }, (_, j) => (
         <B key={`h${j}`} s={[w, 0.004, 0.004]} p={[0, (j * h) / rows, 0]} m={steel} edges={false} />
       ))}
-      {item.options.utensils !== false && <Tools xs={spread(Math.max(2, Math.floor(w / 0.18)), -w / 2 + 0.1, w / 2 - 0.1)} y={h - 0.1} m={mat('#c9ccce', 'metal')} />}
+      {item.options.utensils !== false && (
+        <Tools
+          xs={spread(Math.max(2, Math.floor(w / 0.18)), -w / 2 + 0.1, w / 2 - 0.1)}
+          y={h - 0.1}
+          m={mat('#c9ccce', 'metal')}
+        />
+      )}
     </group>
   )
 }
@@ -288,8 +336,17 @@ export function KitchenRail({ item }: { item: FurnitureItem }) {
           const blade = 0.12 + r() * 0.12
           return (
             <group key={i} position={[x, 0.03, 0.024]}>
-              <B s={[0.022 + r() * 0.02, blade, 0.002]} p={[0, blade / 2 - 0.02, 0]} m={mat('#d8dadc', 'metal')} edges={false} />
-              <B s={[0.022, 0.1, 0.014]} p={[0, -0.07, 0]} m={mat(['#2f7d4c', '#233a8c', '#1d1d1d', '#d9cfb8'][i % 4], 'gloss')} />
+              <B
+                s={[0.022 + r() * 0.02, blade, 0.002]}
+                p={[0, blade / 2 - 0.02, 0]}
+                m={mat('#d8dadc', 'metal')}
+                edges={false}
+              />
+              <B
+                s={[0.022, 0.1, 0.014]}
+                p={[0, -0.07, 0]}
+                m={mat(['#2f7d4c', '#233a8c', '#1d1d1d', '#d9cfb8'][i % 4], 'gloss')}
+              />
             </group>
           )
         })}
@@ -338,7 +395,12 @@ export function FruitBaskets({ item }: { item: FurnitureItem }) {
               Array.from({ length: 7 }, (_, k) => {
                 const fr = 0.03 + r() * 0.02
                 return (
-                  <mesh key={k} position={[-w / 2 + 0.05 + r() * (w - 0.1), fr + 0.006, 0.05 + r() * (d - 0.1)]} material={mat(FRUIT[Math.floor(r() * FRUIT.length)], 'gloss')} castShadow>
+                  <mesh
+                    key={k}
+                    position={[-w / 2 + 0.05 + r() * (w - 0.1), fr + 0.006, 0.05 + r() * (d - 0.1)]}
+                    material={mat(FRUIT[Math.floor(r() * FRUIT.length)], 'gloss')}
+                    castShadow
+                  >
                     <sphereGeometry args={[fr, 14, 10]} />
                   </mesh>
                 )
@@ -402,10 +464,20 @@ export function StationClock({ item }: { item: FurnitureItem }) {
           </mesh>
           {/* hands pivot in the face plane: rotate around the face normal */}
           <group position={[0, 0, 0.004]} rotation={[0, -sx * (Math.PI / 2), 0]}>
-            <group userData={{ noMerge: true }} ref={(el) => void (el && !hands.current.some((x) => x.o === el) && hands.current.push({ o: el, sx, hour: true }))}>
+            <group
+              userData={{ noMerge: true }}
+              ref={(el) =>
+                void (el && !hands.current.some((x) => x.o === el) && hands.current.push({ o: el, sx, hour: true }))
+              }
+            >
               <B s={[0.003, 0.045, 0.008]} p={[0, 0.022, 0]} m={mat('#111', 'matte')} edges={false} />
             </group>
-            <group userData={{ noMerge: true }} ref={(el) => void (el && !hands.current.some((x) => x.o === el) && hands.current.push({ o: el, sx, hour: false }))}>
+            <group
+              userData={{ noMerge: true }}
+              ref={(el) =>
+                void (el && !hands.current.some((x) => x.o === el) && hands.current.push({ o: el, sx, hour: false }))
+              }
+            >
               <B s={[0.003, 0.065, 0.005]} p={[0, 0.032, 0]} m={mat('#111', 'matte')} edges={false} />
             </group>
           </group>
@@ -422,7 +494,16 @@ export function HangingRack({ item }: { item: FurnitureItem }) {
   return (
     <group>
       {[-1, 1].flatMap((sx) =>
-        [-1, 1].map((sz) => <Rod key={`${sx}${sz}`} a={[sx * (w / 2 - 0.05), 0, sz * (d / 2 - 0.05)]} b={[sx * (w / 2 - 0.05), y, sz * (d / 2 - 0.05)]} radius={0.004} m={steel} segments={5} />),
+        [-1, 1].map((sz) => (
+          <Rod
+            key={`${sx}${sz}`}
+            a={[sx * (w / 2 - 0.05), 0, sz * (d / 2 - 0.05)]}
+            b={[sx * (w / 2 - 0.05), y, sz * (d / 2 - 0.05)]}
+            radius={0.004}
+            m={steel}
+            segments={5}
+          />
+        )),
       )}
       {[-1, 1].map((sz) => (
         <B key={`x${sz}`} s={[w, 0.02, 0.02]} p={[0, y, (sz * d) / 2]} m={steel} />

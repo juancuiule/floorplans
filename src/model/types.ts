@@ -1,6 +1,6 @@
-// Plan coordinates, in meters.
-// x runs along the unit: 0 = inner face of the entry wall, 6.9 = balcony window.
-// z runs across: 0 = bathroom-side inner face, 3.0 = kitchen-side inner face.
+// Plan coordinates, in meters (docs/your-own-floorplan.md#2-measure-and-pick-your-axes).
+// x runs along the apartment: 0 = inner face of the entry wall, the facade at the far end (+x).
+// z runs across: 0 = the inner face of one long wall.
 // y is up, 0 = finished floor.
 
 export type Vec2 = [x: number, z: number]
@@ -116,16 +116,7 @@ export interface Shell {
 }
 
 export type ObjectType =
-  | 'box'
-  | 'toilet'
-  | 'basin'
-  | 'showerTray'
-  | 'counter'
-  | 'kitchenSink'
-  | 'cooktop'
-  | 'fridge'
-  | 'downlight'
-  | 'railing'
+  'box' | 'toilet' | 'basin' | 'showerTray' | 'counter' | 'kitchenSink' | 'cooktop' | 'fridge' | 'downlight' | 'railing'
 
 export interface SceneObject {
   id: string

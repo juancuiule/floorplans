@@ -58,7 +58,8 @@ class Bucket {
     const list = this.map.get(mat) ?? []
     // Normalize attributes so everything merges.
     const clean = g.index ? g.toNonIndexed() : g
-    if (!clean.getAttribute('uv')) clean.setAttribute('uv', new THREE.BufferAttribute(new Float32Array((clean.getAttribute('position').count) * 2), 2))
+    if (!clean.getAttribute('uv'))
+      clean.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(clean.getAttribute('position').count * 2), 2))
     list.push(clean)
     this.map.set(mat, list)
   }
@@ -189,18 +190,62 @@ function pot(b: Bucket, style: PotStyle, { r, h }: PotSize, box = false) {
   const profile: THREE.Vector2[] = []
   if (style === 'clay') {
     // The standard flower pot: straight taper, a rim band, on a matching saucer.
-    profile.push(new THREE.Vector2(0, 0), new THREE.Vector2(r * 0.72, 0), new THREE.Vector2(r * 0.9, h * 0.8), new THREE.Vector2(r, h * 0.8), new THREE.Vector2(r, h), new THREE.Vector2(r * 0.9, h), new THREE.Vector2(r * 0.87, h * 0.88))
-    const saucer = new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(r * 0.9, 0), new THREE.Vector2(r * 1.02, h * 0.14), new THREE.Vector2(r * 0.96, h * 0.14), new THREE.Vector2(r * 0.86, h * 0.03), new THREE.Vector2(0, h * 0.03)], 28)
+    profile.push(
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(r * 0.72, 0),
+      new THREE.Vector2(r * 0.9, h * 0.8),
+      new THREE.Vector2(r, h * 0.8),
+      new THREE.Vector2(r, h),
+      new THREE.Vector2(r * 0.9, h),
+      new THREE.Vector2(r * 0.87, h * 0.88),
+    )
+    const saucer = new THREE.LatheGeometry(
+      [
+        new THREE.Vector2(0, 0),
+        new THREE.Vector2(r * 0.9, 0),
+        new THREE.Vector2(r * 1.02, h * 0.14),
+        new THREE.Vector2(r * 0.96, h * 0.14),
+        new THREE.Vector2(r * 0.86, h * 0.03),
+        new THREE.Vector2(0, h * 0.03),
+      ],
+      28,
+    )
     saucer.translate(0, -h * 0.03, 0)
     b.add('saucer', saucer)
   } else if (style === 'terracotta') {
-    profile.push(new THREE.Vector2(0, 0), new THREE.Vector2(r * 0.72, 0), new THREE.Vector2(r * 0.9, h * 0.8), new THREE.Vector2(r * 1.02, h * 0.8), new THREE.Vector2(r * 1.02, h), new THREE.Vector2(r * 0.9, h), new THREE.Vector2(r * 0.86, h * 0.86))
+    profile.push(
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(r * 0.72, 0),
+      new THREE.Vector2(r * 0.9, h * 0.8),
+      new THREE.Vector2(r * 1.02, h * 0.8),
+      new THREE.Vector2(r * 1.02, h),
+      new THREE.Vector2(r * 0.9, h),
+      new THREE.Vector2(r * 0.86, h * 0.86),
+    )
   } else if (style === 'basket') {
-    profile.push(new THREE.Vector2(0, 0), new THREE.Vector2(r * 0.85, 0), new THREE.Vector2(r, h * 0.92), new THREE.Vector2(r * 1.02, h), new THREE.Vector2(r * 0.95, h))
+    profile.push(
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(r * 0.85, 0),
+      new THREE.Vector2(r, h * 0.92),
+      new THREE.Vector2(r * 1.02, h),
+      new THREE.Vector2(r * 0.95, h),
+    )
   } else if (style === 'ceramic') {
-    profile.push(new THREE.Vector2(0, 0), new THREE.Vector2(r * 0.7, 0), new THREE.Vector2(r * 0.98, h * 0.35), new THREE.Vector2(r, h * 0.75), new THREE.Vector2(r * 0.92, h), new THREE.Vector2(r * 0.86, h))
+    profile.push(
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(r * 0.7, 0),
+      new THREE.Vector2(r * 0.98, h * 0.35),
+      new THREE.Vector2(r, h * 0.75),
+      new THREE.Vector2(r * 0.92, h),
+      new THREE.Vector2(r * 0.86, h),
+    )
   } else {
-    profile.push(new THREE.Vector2(0, 0), new THREE.Vector2(r, 0), new THREE.Vector2(r, h), new THREE.Vector2(r * 0.9, h))
+    profile.push(
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(r, 0),
+      new THREE.Vector2(r, h),
+      new THREE.Vector2(r * 0.9, h),
+    )
   }
   b.add('pot', new THREE.LatheGeometry(profile, 28))
   const soil = new THREE.CircleGeometry(r * 0.88, 24)
@@ -211,7 +256,12 @@ function pot(b: Bucket, style: PotStyle, { r, h }: PotSize, box = false) {
 
 // ---------- species ----------
 
-export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: string, opts: { count?: number; spread?: number } = {}): PlantModel {
+export function buildPlant(
+  species: PlantSpecies,
+  potStyle: PotStyle,
+  seed: string,
+  opts: { count?: number; spread?: number } = {},
+): PlantModel {
   const r = seeded(seed + species)
   const b = new Bucket()
   const ps = POT_SIZES[species]
@@ -250,7 +300,10 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         const yaw = i * 2.4
         const pitch = range(r, 0.7, 1.25) - t * 0.3
         const size = range(r, 0.22, 0.3) * (1.1 - t * 0.3)
-        b.add(r() > 0.4 ? 'leafDark' : 'leaf', orient(leaf('oval', size, size * 0.72, 0.15, 0.1), at, dirFrom(yaw, pitch), UP))
+        b.add(
+          r() > 0.4 ? 'leafDark' : 'leaf',
+          orient(leaf('oval', size, size * 0.72, 0.15, 0.1), at, dirFrom(yaw, pitch), UP),
+        )
       }
       height = 1.45
       break
@@ -264,7 +317,10 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         const base = new THREE.Vector3(Math.sin(yaw) * range(r, 0, 0.07), soilY, Math.cos(yaw) * range(r, 0, 0.07))
         const L = range(r, 0.4, 0.75)
         const face = new THREE.Vector3(Math.sin(yaw + 1.5), 0, Math.cos(yaw + 1.5))
-        b.add(r() > 0.35 ? 'leafDark' : 'leafLight', orient(leaf('blade', L, range(r, 0.05, 0.08), 0.04, 0.35), base, dirFrom(yaw, range(r, 0.03, 0.22)), face))
+        b.add(
+          r() > 0.35 ? 'leafDark' : 'leafLight',
+          orient(leaf('blade', L, range(r, 0.05, 0.08), 0.04, 0.35), base, dirFrom(yaw, range(r, 0.03, 0.22)), face),
+        )
       }
       height = 0.75
       break
@@ -291,7 +347,11 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         for (let s = 3; s < steps; s++) {
           const scale = 1 - Math.abs(s - steps * 0.55) / steps
           for (const sgn of [1, -1]) {
-            const dir = side.clone().multiplyScalar(sgn).addScaledVector(dirs[s], 0.5).add(new THREE.Vector3(0, -0.35, 0))
+            const dir = side
+              .clone()
+              .multiplyScalar(sgn)
+              .addScaledVector(dirs[s], 0.5)
+              .add(new THREE.Vector3(0, -0.35, 0))
             b.add('leaf', orient(leaf('lance', 0.22 * scale + 0.05, 0.028, 0.25, 0.3), pts[s], dir, UP))
           }
         }
@@ -307,7 +367,15 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         const yaw = range(r, 0, Math.PI * 2)
         const pitch = range(r, 0.35, 1.15)
         const base = new THREE.Vector3(range(r, -0.03, 0.03), soilY, range(r, -0.03, 0.03))
-        b.add(r() > 0.5 ? 'leafLight' : 'leaf', orient(leaf('serrated', range(r, 0.38, 0.55), range(r, 0.09, 0.13), 0.55, 0.15), base, dirFrom(yaw, pitch), UP))
+        b.add(
+          r() > 0.5 ? 'leafLight' : 'leaf',
+          orient(
+            leaf('serrated', range(r, 0.38, 0.55), range(r, 0.09, 0.13), 0.55, 0.15),
+            base,
+            dirFrom(yaw, pitch),
+            UP,
+          ),
+        )
       }
       height = 0.5
       break
@@ -316,7 +384,8 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
     case 'olive': {
       pot(b, potStyle, ps)
       const pts = [new THREE.Vector3(0, soilY, 0)]
-      for (let i = 1; i <= 5; i++) pts.push(new THREE.Vector3(range(r, -0.05, 0.05), soilY + i * 0.2, range(r, -0.05, 0.05)))
+      for (let i = 1; i <= 5; i++)
+        pts.push(new THREE.Vector3(range(r, -0.05, 0.05), soilY + i * 0.2, range(r, -0.05, 0.05)))
       b.add('trunk', tube(pts, 0.03, 24))
       const crown = pts[pts.length - 1]
       const blobs = 10
@@ -388,7 +457,10 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         for (let i = 0; i < ring.n; i++) {
           const yaw = (i / ring.n) * Math.PI * 2 + k * 0.4
           const base = new THREE.Vector3(0, soilY + 0.008 - k * 0.002, 0)
-          b.add('succulent', orient(leaf('oval', ring.len, ring.len * 0.65, -0.25, 0.3), base, dirFrom(yaw, ring.pitch), UP))
+          b.add(
+            'succulent',
+            orient(leaf('oval', ring.len, ring.len * 0.65, -0.25, 0.3), base, dirFrom(yaw, ring.pitch), UP),
+          )
         }
       })
       height = 0.07
@@ -406,7 +478,10 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
           const at = base.clone().lerp(tip, k / 4)
           for (const side of [0, Math.PI]) {
             const a = yaw + side + k * 1.57
-            b.add('leafLight', orient(leaf('oval', range(r, 0.03, 0.045), 0.026, 0.2, 0.25), at, dirFrom(a, range(r, 0.9, 1.3)), UP))
+            b.add(
+              'leafLight',
+              orient(leaf('oval', range(r, 0.03, 0.045), 0.026, 0.2, 0.25), at, dirFrom(a, range(r, 0.9, 1.3)), UP),
+            )
           }
         }
       }
@@ -431,7 +506,15 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
       for (let i = 0; i < 16; i++) {
         const yaw = i * 2.4
         const pitch = 0.15 + (i / 16) * 0.7
-        b.add('leafDark', orient(leaf('lance', 0.04 + (i / 16) * 0.02, 0.014, 0.1, 0.4), new THREE.Vector3(0, soilY + 0.004, 0), dirFrom(yaw, pitch), UP))
+        b.add(
+          'leafDark',
+          orient(
+            leaf('lance', 0.04 + (i / 16) * 0.02, 0.014, 0.1, 0.4),
+            new THREE.Vector3(0, soilY + 0.004, 0),
+            dirFrom(yaw, pitch),
+            UP,
+          ),
+        )
       }
       height = 0.08
       break
@@ -445,7 +528,9 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         const mid = base.clone().addScaledVector(dirFrom(yaw, range(r, 0.15, 0.4)), range(r, 0.1, 0.16))
         b.add('trunk', rod(base, mid, 0.012, 0.009, 6))
         for (let k = 0; k < 3; k++) {
-          const tip = mid.clone().addScaledVector(dirFrom(yaw + range(r, -1, 1), range(r, 0.3, 0.9)), range(r, 0.07, 0.14))
+          const tip = mid
+            .clone()
+            .addScaledVector(dirFrom(yaw + range(r, -1, 1), range(r, 0.3, 0.9)), range(r, 0.07, 0.14))
           b.add('trunk', rod(mid, tip, 0.007, 0.004, 5))
           for (let l = 0; l < 6; l++) {
             const dir = dirFrom(range(r, 0, Math.PI * 2), range(r, 0.3, 1.2))
@@ -480,7 +565,10 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
           const t = 0.3 + (i / 9) * 0.7
           const at = base.clone().lerp(top, t)
           const size = range(r, 0.2, 0.28)
-          b.add(i % 3 === 0 ? 'variegated' : 'leafDark', orient(leaf('oval', size, size * 0.5, 0.12, 0.08), at, dirFrom(i * 2.3 + s, range(r, 0.8, 1.2)), UP))
+          b.add(
+            i % 3 === 0 ? 'variegated' : 'leafDark',
+            orient(leaf('oval', size, size * 0.5, 0.12, 0.08), at, dirFrom(i * 2.3 + s, range(r, 0.8, 1.2)), UP),
+          )
         }
       }
       height = 1.05
@@ -493,7 +581,15 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
         const yaw = range(r, 0, Math.PI * 2)
         const base = new THREE.Vector3(range(r, -0.03, 0.03), soilY + range(r, 0, 0.18), range(r, -0.03, 0.03))
         const mat: PlantMat = r() > 0.55 ? 'crotonRed' : r() > 0.4 ? 'crotonYellow' : 'leafDark'
-        b.add(mat, orient(leaf('lance', range(r, 0.16, 0.24), range(r, 0.05, 0.07), 0.2, 0.15), base, dirFrom(yaw, range(r, 0.4, 1.2)), UP))
+        b.add(
+          mat,
+          orient(
+            leaf('lance', range(r, 0.16, 0.24), range(r, 0.05, 0.07), 0.2, 0.15),
+            base,
+            dirFrom(yaw, range(r, 0.4, 1.2)),
+            UP,
+          ),
+        )
       }
       b.add('trunk', rod(new THREE.Vector3(0, soilY, 0), new THREE.Vector3(0, soilY + 0.2, 0), 0.008, 0.005, 5))
       height = 0.5
@@ -504,7 +600,15 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
       pot(b, potStyle, ps)
       for (let i = 0; i < 28; i++) {
         const yaw = range(r, 0, Math.PI * 2)
-        b.add(i % 3 ? 'leafLight' : 'variegated', orient(leaf('blade', range(r, 0.25, 0.4), 0.018, 0.9, 0.2), new THREE.Vector3(0, soilY, 0), dirFrom(yaw, range(r, 0.3, 0.9)), UP))
+        b.add(
+          i % 3 ? 'leafLight' : 'variegated',
+          orient(
+            leaf('blade', range(r, 0.25, 0.4), 0.018, 0.9, 0.2),
+            new THREE.Vector3(0, soilY, 0),
+            dirFrom(yaw, range(r, 0.3, 0.9)),
+            UP,
+          ),
+        )
       }
       height = 0.35
       break
@@ -556,7 +660,13 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
       // Burro's tail spilling over the front edge.
       for (let i = 0; i < 10; i++) {
         const x = -ps.r + 0.04 + i * ((ps.r * 2 - 0.08) / 9)
-        beadStrand(inner, r, new THREE.Vector3(x, top, 0.1), new THREE.Vector3(range(r, -0.1, 0.1), 0, 1), range(r, 0.2, 0.55))
+        beadStrand(
+          inner,
+          r,
+          new THREE.Vector3(x, top, 0.1),
+          new THREE.Vector3(range(r, -0.1, 0.1), 0, 1),
+          range(r, 0.2, 0.55),
+        )
       }
       for (const part of inner.parts()) {
         part.geometry.translate(0, -ps.h / 2, 0.12)
@@ -584,7 +694,16 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
       }
       for (let i = 0; i < 3; i++) {
         const a = (i / 3) * Math.PI * 2
-        b.add('cord', rod(new THREE.Vector3(Math.sin(a) * ps.r * 0.95, potY + ps.h, Math.cos(a) * ps.r * 0.95), new THREE.Vector3(0, 0, 0), 0.003, 0.003, 4))
+        b.add(
+          'cord',
+          rod(
+            new THREE.Vector3(Math.sin(a) * ps.r * 0.95, potY + ps.h, Math.cos(a) * ps.r * 0.95),
+            new THREE.Vector3(0, 0, 0),
+            0.003,
+            0.003,
+            4,
+          ),
+        )
       }
       const vines = 8
       for (let i = 0; i < vines; i++) {
@@ -597,13 +716,24 @@ export function buildPlant(species: PlantSpecies, potStyle: PotStyle, seed: stri
           const t = s / 10
           // Spill over the rim first, then fall mostly straight down.
           const spread = 0.1 * Math.sin(Math.min(1, t * 3) * Math.PI * 0.5) + 0.03 * t
-          pts.push(start.clone().addScaledVector(out, spread).add(new THREE.Vector3(0, -L * Math.pow(t, 1.4) - 0.02, 0)))
+          pts.push(
+            start
+              .clone()
+              .addScaledVector(out, spread)
+              .add(new THREE.Vector3(0, -L * Math.pow(t, 1.4) - 0.02, 0)),
+          )
         }
         b.add('stem', tube(pts, 0.003, 14))
         for (let s = 1; s <= 10; s++) {
           const p = pts[s]
-          const dir = out.clone().multiplyScalar(range(r, -0.2, 1)).add(new THREE.Vector3(range(r, -0.6, 0.6), range(r, -0.6, 0.2), range(r, -0.6, 0.6)))
-          b.add(r() > 0.5 ? 'leafLight' : 'leaf', orient(leaf('heart', range(r, 0.06, 0.09), 0.06, 0.2, 0.15), p, dir, out))
+          const dir = out
+            .clone()
+            .multiplyScalar(range(r, -0.2, 1))
+            .add(new THREE.Vector3(range(r, -0.6, 0.6), range(r, -0.6, 0.2), range(r, -0.6, 0.6)))
+          b.add(
+            r() > 0.5 ? 'leafLight' : 'leaf',
+            orient(leaf('heart', range(r, 0.06, 0.09), 0.06, 0.2, 0.15), p, dir, out),
+          )
         }
       }
       height = 1.4
@@ -636,7 +766,14 @@ function beadStrand(b: Bucket, r: Rand, start: THREE.Vector3, out: THREE.Vector3
 }
 
 /** Burro's tail strands spilling over the rim of a round pot. */
-function trailingStrands(b: Bucket, r: Rand, potR: number, soilY: number, count: number, [minL, maxL]: [number, number]) {
+function trailingStrands(
+  b: Bucket,
+  r: Rand,
+  potR: number,
+  soilY: number,
+  count: number,
+  [minL, maxL]: [number, number],
+) {
   for (let i = 0; i < count; i++) {
     const a = (i / count) * Math.PI * 2 + range(r, -0.2, 0.2)
     const out = new THREE.Vector3(Math.sin(a), 0, Math.cos(a))

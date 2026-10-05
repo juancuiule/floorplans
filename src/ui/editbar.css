@@ -12,7 +12,9 @@
   border-radius: 12px;
   /* Opaque: a backdrop blur over the live canvas would re-blur every frame. */
   background: #f8f7f4;
-  box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgb(0 0 0 / 0.08);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 6px 24px rgb(0 0 0 / 0.08);
   font-size: 12px;
   color: var(--ink);
   user-select: none;

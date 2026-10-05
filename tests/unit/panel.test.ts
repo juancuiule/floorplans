@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseNumber } from '../../src/ui/controlUtils'
 import type { FurnitureItem } from '../../src/model/decor'
+import { openTestPlan } from './plans'
 
 // Panel pieces rendered in jsdom: the number field parser, the inspector and
 // the Room tab's plan diagram.
@@ -20,7 +21,8 @@ describe('parseNumber', () => {
     expect(parseNumber('7.')).toBe(7)
   })
   it('rejects anything else instead of reading a prefix', () => {
-    for (const junk of ['', ' ', 'abc', '12abc', '0x10', '1e9', 'Infinity', '-', '.', '1.2.3', '1,2,3']) expect(parseNumber(junk), junk).toBeNull()
+    for (const junk of ['', ' ', 'abc', '12abc', '0x10', '1e9', 'Infinity', '-', '.', '1.2.3', '1,2,3'])
+      expect(parseNumber(junk), junk).toBeNull()
   })
 })
 
@@ -39,7 +41,11 @@ afterEach(() => {
 async function load(search: string) {
   window.history.replaceState(null, '', `/${search}`)
   vi.resetModules()
-  vi.stubGlobal('fetch', vi.fn(async () => new Response('{"version":1,"items":[]}')))
+  await openTestPlan()
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('{"version":1,"items":[]}')),
+  )
 }
 
 describe('Inspector options', () => {
@@ -49,7 +55,16 @@ describe('Inspector options', () => {
     const { Inspector } = await import('../../src/ui/Inspector')
     await useDecor.getState().load()
     // Saved before the floating shelf could be styled: no `items` option.
-    const shelf: FurnitureItem = { kind: 'furniture', id: 'f1', type: 'floatingShelf', at: [4, 1.4, 0.1], rotation: 0, size: [0.8, 0.04, 0.2], finish: { body: '#c9a57a', metal: '#222222', fabric: '#dddddd' }, options: { brackets: true } }
+    const shelf: FurnitureItem = {
+      kind: 'furniture',
+      id: 'f1',
+      type: 'floatingShelf',
+      at: [4, 1.4, 0.1],
+      rotation: 0,
+      size: [0.8, 0.04, 0.2],
+      finish: { body: '#c9a57a', metal: '#222222', fabric: '#dddddd' },
+      options: { brackets: true },
+    }
     act(() => useDecor.setState({ items: [shelf] }))
     act(() => root.render(createElement(Inspector, { id: 'f1' })))
     const styled = [...host.querySelectorAll('.switch-row')].find((r) => /styled/i.test(r.textContent ?? ''))!

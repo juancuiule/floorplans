@@ -19,7 +19,6 @@ export const cm = (m: number) => Math.round(m * 1000) / 10
 export const fileName = (url: string) => decodeURIComponent(url.split('/').pop() ?? '').replace(/\.[^.]+$/, '')
 
 /** Items parked below the floor are drafts that have not been dropped yet. */
-export const isPlaced = (item: DecorItem) => item.at[1] > -50
 
 export function itemLabel(item: DecorItem) {
   if (item.kind === 'artwork') return fileName(item.image)
@@ -30,18 +29,14 @@ export function itemLabel(item: DecorItem) {
 
 /** Second line of the inspector header: what kind of thing this is and where it goes. */
 export function itemKindLine(item: DecorItem) {
-  if (item.kind === 'artwork') return `Artwork · ${item.size.preset === 'custom' ? 'custom size' : `${item.size.preset.replace('x', '×')} print`}`
+  if (item.kind === 'artwork')
+    return `Artwork · ${item.size.preset === 'custom' ? 'custom size' : `${item.size.preset.replace('x', '×')} print`}`
   if (item.kind === 'plant') return `Plant · ${PLANT_META[item.species].group.toLowerCase()}`
   if (item.kind === 'furniture') return `Furniture · ${FURNITURE[item.type].group.replace('&', 'and').toLowerCase()}`
   return `Light · ${MOUNT_GROUP[LAMPS[item.type].mount].toLowerCase()}`
 }
 
-const fold = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[’']/g, '')
-    .toLowerCase()
+const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').toLowerCase()
 
 /** Every word of the query must appear somewhere in the haystack. */
 export function matches(query: string, ...haystack: (string | undefined)[]) {
@@ -50,3 +45,7 @@ export function matches(query: string, ...haystack: (string | undefined)[]) {
   const text = fold(haystack.filter(Boolean).join(' '))
   return words.every((w) => text.includes(w))
 }
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+/** The command key's label on this platform. */
+export const MOD = isMac ? '⌘' : 'Ctrl'

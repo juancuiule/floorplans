@@ -1,20 +1,16 @@
 import type { Plan } from '../model/plan'
-import { DEFAULT_PLAN_ID } from '../plans/default'
+import { checkedPlan } from '../model/validate'
 
-// Every plan in src/plans is bundled; ?plan=<id> picks one, the default is set in src/plans/default.ts.
+// The open plan. Plans are fetched from the open space when the page starts
+// (src/main.tsx, docs/adr/0010), checked, and opened here before the app's
+// modules load: many of them read the plan, or values derived from it, when
+// they are imported (docs/adr/0002).
 
-const modules = import.meta.glob<Plan>('../plans/*.plan.json', { eager: true, import: 'default' })
+/** The open plan. Set by openPlan() before anything that reads it is imported. */
+export let plan: Plan
 
-export const PLANS: Plan[] = Object.values(modules).sort((a, b) => a.name.localeCompare(b.name))
-export { DEFAULT_PLAN_ID }
-
-function pick(): Plan {
-  const wanted = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('plan')
-  const found = PLANS.find((p) => p.id === wanted) ?? PLANS.find((p) => p.id === DEFAULT_PLAN_ID)
-  if (!found) throw new Error(`No plan "${wanted ?? DEFAULT_PLAN_ID}" in src/plans`)
-  return found
+/** Checks a plan and makes it the open one; a broken plan fails with every problem listed. */
+export function openPlan(raw: unknown, source = 'The plan'): Plan {
+  plan = checkedPlan(raw, source)
+  return plan
 }
-
-/** The open plan. */
-export const plan: Plan = pick()
-export const isDefaultPlan = plan.id === DEFAULT_PLAN_ID

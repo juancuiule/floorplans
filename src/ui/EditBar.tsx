@@ -3,7 +3,15 @@ import type { AlignMode } from '../decor/arrange'
 import { LAMPS, PLANTS } from '../decor/catalog'
 import { FURNITURE } from '../decor/furnitureCatalog'
 import { collisionsOf, mountOf } from '../decor/placement'
-import { alignSelection, arrangeFrame, distributeSelection, groupName, matchSelectionSize, selectedGroup, selectionSummary } from '../decor/selection'
+import {
+  alignSelection,
+  arrangeFrame,
+  distributeSelection,
+  groupName,
+  matchSelectionSize,
+  selectedGroup,
+  selectionSummary,
+} from '../decor/selection'
 import { useDecor } from '../decor/store'
 import type { DecorItem } from '../model/decor'
 import './editbar.css'
@@ -11,14 +19,25 @@ import './editbar.css'
 const mod = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'
 
 function label(item: DecorItem): string {
-  if (item.kind === 'artwork') return decodeURIComponent(item.image.split('/').pop() ?? '').replace(/\.[^.]+$/, '') || 'Artwork'
+  if (item.kind === 'artwork')
+    return decodeURIComponent(item.image.split('/').pop() ?? '').replace(/\.[^.]+$/, '') || 'Artwork'
   if (item.kind === 'plant') return PLANTS[item.species].label
   if (item.kind === 'furniture') return FURNITURE[item.type].label
   return LAMPS[item.type].label
 }
 
 const icon = (d: ReactNode) => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     {d}
   </svg>
 )
@@ -153,9 +172,28 @@ const ALIGN_LABELS: Record<AlignMode, [string, string]> = {
   bottom: ['Align bottoms', 'Alt+S'],
 }
 
-function Btn({ title, onClick, disabled, children, danger }: { title: string; onClick: () => void; disabled?: boolean; children: ReactNode; danger?: boolean }) {
+function Btn({
+  title,
+  onClick,
+  disabled,
+  children,
+  danger,
+}: {
+  title: string
+  onClick: () => void
+  disabled?: boolean
+  children: ReactNode
+  danger?: boolean
+}) {
   return (
-    <button type="button" className={danger ? 'danger' : undefined} title={title} aria-label={title} onClick={onClick} disabled={disabled}>
+    <button
+      type="button"
+      className={danger ? 'danger' : undefined}
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      disabled={disabled}
+    >
       {children}
     </button>
   )
@@ -189,8 +227,7 @@ export function EditBar() {
             {warning}
           </span>
         ) : (
-          'rotation' in item &&
-          turnable && <span className="editbar-meta">{Math.round(item.rotation)}°</span>
+          'rotation' in item && turnable && <span className="editbar-meta">{Math.round(item.rotation)}°</span>
         )}
       </div>
       {turnable && (
@@ -243,20 +280,35 @@ function MultiBar() {
     <div className="editbar" role="toolbar" aria-label="Selection">
       <div className="editbar-name">
         <strong title={gid ? groupName(gid) : undefined}>{gid ? groupName(gid) : selectionSummary(sel)}</strong>
-        <span className="editbar-count">{gid ? selectionSummary(sel) : onWall ? 'On one wall' : frame ? 'On the floor' : 'Walls and floor'}</span>
+        <span className="editbar-count">
+          {gid ? selectionSummary(sel) : onWall ? 'On one wall' : frame ? 'On the floor' : 'Walls and floor'}
+        </span>
       </div>
       <div className="editbar-group" role="group" aria-label="Align">
         {(Object.keys(ALIGN_ICONS) as AlignMode[]).map((m) => (
-          <Btn key={m} title={`${ALIGN_LABELS[m][0]} (${ALIGN_LABELS[m][1]})${why}`} onClick={() => alignSelection(m)} disabled={!frame}>
+          <Btn
+            key={m}
+            title={`${ALIGN_LABELS[m][0]} (${ALIGN_LABELS[m][1]})${why}`}
+            onClick={() => alignSelection(m)}
+            disabled={!frame}
+          >
             {ALIGN_ICONS[m]}
           </Btn>
         ))}
       </div>
       <div className="editbar-group" role="group" aria-label="Distribute">
-        <Btn title={`Distribute ${dist(true)} with equal gaps (Alt+Shift+H)${why}`} onClick={() => distributeSelection('u')} disabled={!frame || sel.length < 3}>
+        <Btn
+          title={`Distribute ${dist(true)} with equal gaps (Alt+Shift+H)${why}`}
+          onClick={() => distributeSelection('u')}
+          disabled={!frame || sel.length < 3}
+        >
           {MULTI_ICONS.distH}
         </Btn>
-        <Btn title={`Distribute ${dist(false)} with equal gaps (Alt+Shift+V)${why}`} onClick={() => distributeSelection('v')} disabled={!frame || sel.length < 3}>
+        <Btn
+          title={`Distribute ${dist(false)} with equal gaps (Alt+Shift+V)${why}`}
+          onClick={() => distributeSelection('v')}
+          disabled={!frame || sel.length < 3}
+        >
           {MULTI_ICONS.distV}
         </Btn>
         {artworks >= 2 && (

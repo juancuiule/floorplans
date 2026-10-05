@@ -1,16 +1,41 @@
 // @vitest-environment node
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { FURNITURE, FURNITURE_GROUPS, FURNITURE_KEYWORDS, TV_BEZEL, TV_INCHES, tvPanel } from '../../src/decor/furnitureCatalog'
+import {
+  FURNITURE,
+  FURNITURE_GROUPS,
+  FURNITURE_KEYWORDS,
+  TV_BEZEL,
+  TV_INCHES,
+  tvPanel,
+} from '../../src/decor/furnitureCatalog'
 import { placeAt } from '../../src/decor/placement'
 import type { FurnitureItem, FurnitureType } from '../../src/model/decor'
-import { FURNITURE_ICON } from '../../src/ui/icons'
+import { FURNITURE_ICON } from '../../src/ui/itemIcons'
 
-const DEVICES: FurnitureType[] = ['speakers', 'standMixer', 'espressoMachine', 'turntable', 'acIndoor', 'acOutdoor', 'tv', 'tvWall']
+const DEVICES: FurnitureType[] = [
+  'speakers',
+  'standMixer',
+  'espressoMachine',
+  'turntable',
+  'acIndoor',
+  'acOutdoor',
+  'tv',
+  'tvWall',
+]
 
 const item = (type: FurnitureType, options = {}): FurnitureItem => {
   const s = FURNITURE[type]
-  return { kind: 'furniture', id: `t-${type}`, type, at: [0, 0, 0], rotation: 0, size: [...s.size], finish: { ...s.finish }, options: { ...s.options, ...options } }
+  return {
+    kind: 'furniture',
+    id: `t-${type}`,
+    type,
+    at: [0, 0, 0],
+    rotation: 0,
+    size: [...s.size],
+    finish: { ...s.finish },
+    options: { ...s.options, ...options },
+  }
 }
 
 describe('appliances & electronics', () => {
@@ -50,15 +75,23 @@ describe('appliances & electronics', () => {
       expect(Math.hypot(w - 2 * TV_BEZEL, h - 2 * TV_BEZEL) / 0.0254, `${n}″`).toBeCloseTo(n, 0)
     }
     const stand = FURNITURE.tv
-    expect(stand.sizeFor!({ ...stand.options, inches: 32 }, stand.size)).toEqual([tvPanel(32)[0], Number((tvPanel(32)[1] + 0.07).toFixed(3)), 0.25])
-    expect(stand.sizeFor!({ ...stand.options, inches: 75, stand: 'pedestal' }, stand.size)[1]).toBeCloseTo(tvPanel(75)[1] + 0.1, 3)
+    expect(stand.sizeFor!({ ...stand.options, inches: 32 }, stand.size)).toEqual([
+      tvPanel(32)[0],
+      Number((tvPanel(32)[1] + 0.07).toFixed(3)),
+      0.25,
+    ])
+    expect(stand.sizeFor!({ ...stand.options, inches: 75, stand: 'pedestal' }, stand.size)[1]).toBeCloseTo(
+      tvPanel(75)[1] + 0.1,
+      3,
+    )
     const wall = FURNITURE.tvWall
     expect(wall.sizeFor!({ ...wall.options, inches: 65 }, wall.size)).toEqual([...tvPanel(65), 0.06])
   })
 
   it('a wall TV settles with a 55″ screen centered near seated eye height', () => {
     const tv = item('tvWall')
-    const at = placeAt(tv, { point: new THREE.Vector3(4, 1.0, 0.1), normal: new THREE.Vector3(0, 0, 1), kind: 'wall' })!.at as number[]
+    const at = placeAt(tv, { point: new THREE.Vector3(4, 1.0, 0.1), normal: new THREE.Vector3(0, 0, 1), kind: 'wall' })!
+      .at as number[]
     expect(at[1]).toBe(0.75)
     expect(at[1] + tv.size[1] / 2).toBeCloseTo(1.1, 1)
   })
@@ -79,7 +112,11 @@ describe('appliances & electronics', () => {
   })
 
   it('the indoor AC unit settles at its usual height when placed near it', () => {
-    const hit = (y: number) => ({ point: new THREE.Vector3(3, y, 0.1), normal: new THREE.Vector3(0, 0, 1), kind: 'wall' as const })
+    const hit = (y: number) => ({
+      point: new THREE.Vector3(3, y, 0.1),
+      normal: new THREE.Vector3(0, 0, 1),
+      kind: 'wall' as const,
+    })
     const ac = item('acIndoor')
     // Pointer at the unit's center: bottom edge 14 cm below it.
     expect((placeAt(ac, hit(2.1))!.at as number[])[1]).toBe(2.1)

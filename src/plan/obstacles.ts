@@ -62,7 +62,16 @@ export function shellObstacles(open: OpeningRule): Obstacle[] {
     const rotation = (Math.atan2(-uz, ux) * 180) / Math.PI
     spans.forEach(([s0, s1], i) => {
       const mid = (s0 + s1) / 2
-      out.push({ id: `${w.id}:${i}`, kind: 'wall', cx: w.a[0] + ux * mid, cz: w.a[1] + uz * mid, hw: (s1 - s0) / 2, hd: w.thickness / 2, rotation, top: w.height })
+      out.push({
+        id: `${w.id}:${i}`,
+        kind: 'wall',
+        cx: w.a[0] + ux * mid,
+        cz: w.a[1] + uz * mid,
+        hw: (s1 - s0) / 2,
+        hd: w.thickness / 2,
+        rotation,
+        top: w.height,
+      })
     })
   }
   for (const b of activeBulges()) {
@@ -81,7 +90,16 @@ export function shellObstacles(open: OpeningRule): Obstacle[] {
   for (const o of project.objects) {
     const size = o.size ?? FIXTURE_SIZE[o.type]
     if (!size || !(o.type in FIXTURE_SIZE) || o.position[1] > 0.05) continue
-    out.push({ id: o.id, kind: 'fixture', cx: o.position[0], cz: o.position[2], hw: size[0] / 2, hd: size[2] / 2, rotation: o.rotation ?? 0, top: size[1] })
+    out.push({
+      id: o.id,
+      kind: 'fixture',
+      cx: o.position[0],
+      cz: o.position[2],
+      hw: size[0] / 2,
+      hd: size[2] / 2,
+      rotation: o.rotation ?? 0,
+      top: size[1],
+    })
   }
   cache.set(open, out)
   return out

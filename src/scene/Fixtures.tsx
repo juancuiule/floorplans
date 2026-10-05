@@ -69,7 +69,12 @@ function Fixture({ object: o, ceilingY }: { object: SceneObject; ceilingY: numbe
       return (
         <group>
           <Box size={[w, 0.14, d]} position={[0, h - 0.07, 0]} material={m('ceramic')} edgeMaterial={edge} />
-          <Box size={[w - 0.08, 0.02, d - 0.1]} position={[0, h - 0.005, 0.02]} material={m('tile')} castShadow={false} />
+          <Box
+            size={[w - 0.08, 0.02, d - 0.1]}
+            position={[0, h - 0.005, 0.02]}
+            material={m('tile')}
+            castShadow={false}
+          />
           <mesh position={[0, (h - 0.14) / 2, -0.02]} material={m('ceramic')} castShadow>
             <cylinderGeometry args={[0.07, 0.09, h - 0.14, 24]} />
           </mesh>
@@ -97,7 +102,12 @@ function Fixture({ object: o, ceilingY }: { object: SceneObject; ceilingY: numbe
       return (
         <group>
           <Box size={[w, plinth, d - 0.08]} position={[0, plinth / 2, -0.04]} material={m('countertop')} />
-          <Box size={[w, h - top - plinth, d - 0.04]} position={[0, plinth + (h - top - plinth) / 2, -0.02]} material={m('cabinet')} edgeMaterial={edge} />
+          <Box
+            size={[w, h - top - plinth, d - 0.04]}
+            position={[0, plinth + (h - top - plinth) / 2, -0.02]}
+            material={m('cabinet')}
+            edgeMaterial={edge}
+          />
           {Array.from({ length: doors }, (_, i) => (
             <Box
               key={i}
@@ -116,7 +126,12 @@ function Fixture({ object: o, ceilingY }: { object: SceneObject; ceilingY: numbe
       return (
         <group>
           <Box size={[w, 0.004, d]} position={[0, 0.002, 0]} material={m('steel')} castShadow={false} />
-          <Box size={[w - 0.05, 0.005, d - 0.05]} position={[0, 0.004, 0]} material={m('bathFloor')} castShadow={false} />
+          <Box
+            size={[w - 0.05, 0.005, d - 0.05]}
+            position={[0, 0.004, 0]}
+            material={m('bathFloor')}
+            castShadow={false}
+          />
           <mesh position={[0, 0.16, -d / 2 - 0.03]} material={m('steel')} castShadow>
             <cylinderGeometry args={[0.014, 0.018, 0.32, 16]} />
           </mesh>
@@ -149,11 +164,15 @@ function Fixture({ object: o, ceilingY }: { object: SceneObject; ceilingY: numbe
     case 'downlight':
       return <Downlight ceilingY={ceilingY} />
 
-
     case 'railing':
       return (
         <group>
-          <Box size={[w, h - 0.06, d]} position={[0, (h - 0.06) / 2 + 0.02, 0]} material={m('glass')} castShadow={false} />
+          <Box
+            size={[w, h - 0.06, d]}
+            position={[0, (h - 0.06) / 2 + 0.02, 0]}
+            material={m('glass')}
+            castShadow={false}
+          />
           <mesh position={[0, h, 0]} rotation={[0, 0, Math.PI / 2]} material={m('steel')} castShadow>
             <cylinderGeometry args={[0.025, 0.025, w, 16]} />
           </mesh>

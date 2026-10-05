@@ -1,17 +1,32 @@
 // Render cost per view: draw calls, triangles, programs, fps under continuous rendering, idle fps.
 // Usage: [DSF=2] node scripts/perf.mjs [baseUrl] [query ...]   (DSF: device pixel ratio)
 //   node scripts/perf.mjs http://localhost:5173 "view=iso-balcony&decor=furn" "view=iso-balcony&decor=furn&light=evening"
+import { appUrl } from '../tests/e2e/space.mjs'
 import { chromium } from 'playwright'
 
 const [base = 'http://localhost:5173', ...rest] = process.argv.slice(2)
-const queries = rest.length ? rest : ['view=iso-balcony&decor=furn', 'view=iso-balcony&decor=furn&light=evening', 'view=iso-balcony&decor=empty']
+const queries = rest.length
+  ? rest
+  : ['view=iso-balcony&decor=furn', 'view=iso-balcony&decor=furn&light=evening', 'view=iso-balcony&decor=empty']
 
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, args: ['--use-angle=metal', '--ignore-gpu-blocklist', '--enable-gpu', '--disable-gpu-vsync', '--disable-frame-rate-limit'] })
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: Number(process.env.DSF ?? 1) })
+const browser = await chromium.launch({
+  executablePath: process.env.CHROME_PATH || undefined,
+  args: [
+    '--use-angle=metal',
+    '--ignore-gpu-blocklist',
+    '--enable-gpu',
+    '--disable-gpu-vsync',
+    '--disable-frame-rate-limit',
+  ],
+})
+const page = await browser.newPage({
+  viewport: { width: 1440, height: 900 },
+  deviceScaleFactor: Number(process.env.DSF ?? 1),
+})
 page.on('pageerror', (e) => console.log('[pageerror]', e.message))
 
 for (const q of queries) {
-  await page.goto(`${base}/?dims=0&${q}`)
+  await page.goto(`${appUrl(base)}&dims=0&${q}`)
   await page.waitForFunction(() => (window.__frames ?? 0) > 40, null, { timeout: 60000 })
   await page.waitForTimeout(2500)
   const result = await page.evaluate(async () => {

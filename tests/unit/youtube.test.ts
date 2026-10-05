@@ -23,11 +23,19 @@ describe('YouTube links', () => {
   })
 
   it('rejects anything else', () => {
-    for (const bad of ['', 'hello', 'https://vimeo.com/123', 'https://www.youtube.com/watch?v=short', 'https://example.com/watch?v=jNQXAC9IVRw'])
+    for (const bad of [
+      '',
+      'hello',
+      'https://vimeo.com/123',
+      'https://www.youtube.com/watch?v=short',
+      'https://example.com/watch?v=jNQXAC9IVRw',
+    ])
       expect(parseYouTube(bad), bad).toBeNull()
   })
 
   it('embeds privacy-enhanced, from the start time', () => {
-    expect(embedUrl({ id: 'jNQXAC9IVRw', start: 65 })).toBe('https://www.youtube-nocookie.com/embed/jNQXAC9IVRw?rel=0&modestbranding=1&playsinline=1&start=65')
+    expect(embedUrl({ id: 'jNQXAC9IVRw', start: 65 })).toBe(
+      'https://www.youtube-nocookie.com/embed/jNQXAC9IVRw?rel=0&modestbranding=1&playsinline=1&start=65',
+    )
   })
 })

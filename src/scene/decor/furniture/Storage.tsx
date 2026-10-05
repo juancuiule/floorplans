@@ -1,5 +1,6 @@
 import type { FurnitureItem } from '../../../model/decor'
-import { B, Books, FingerHole, mat, Rod, T } from './common'
+import { B, Books, FingerHole, Rod, T } from './common'
+import { mat } from './furnitureMaterials'
 
 export function Bookshelf({ item }: { item: FurnitureItem }) {
   const [w, h, d] = item.size
@@ -22,7 +23,16 @@ export function Bookshelf({ item }: { item: FurnitureItem }) {
           const i = k % cols
           const j = Math.floor(k / cols)
           if ((i * 7 + j * 3) % 4 === 3) return null
-          return <Books key={k} w={cw - T} h={rh - T} d={d - T} seed={`${item.id}${k}`} p={[-w / 2 + T / 2 + (i + 0.5) * cw, T + j * rh, T / 2]} />
+          return (
+            <Books
+              key={k}
+              w={cw - T}
+              h={rh - T}
+              d={d - T}
+              seed={`${item.id}${k}`}
+              p={[-w / 2 + T / 2 + (i + 0.5) * cw, T + j * rh, T / 2]}
+            />
+          )
         })}
     </group>
   )
@@ -59,13 +69,26 @@ export function Wardrobe({ item }: { item: FurnitureItem }) {
       {side > 0 && (
         <group>
           {/* open shelving column, cut into the carcass front */}
-          <B s={[side - T, h - plinth - 2 * T, 0.004]} p={[-w / 2 + side / 2, plinth + (h - plinth) / 2, d / 2 - 0.3]} m={mat('#b9a27f')} edges={false} />
+          <B
+            s={[side - T, h - plinth - 2 * T, 0.004]}
+            p={[-w / 2 + side / 2, plinth + (h - plinth) / 2, d / 2 - 0.3]}
+            m={mat('#b9a27f')}
+            edges={false}
+          />
           {Array.from({ length: 6 }, (_, j) => {
             const y = plinth + ((h - plinth) / 6) * j
             return (
               <group key={j}>
                 <B s={[side, T, 0.3]} p={[-w / 2 + side / 2, y + T / 2, d / 2 - 0.15]} m={body} />
-                {j < 5 && <Books w={side - T * 2} h={(h - plinth) / 6 - T - 0.02} d={0.28} seed={`${item.id}${j}`} p={[-w / 2 + side / 2, y + T, d / 2 - 0.15]} />}
+                {j < 5 && (
+                  <Books
+                    w={side - T * 2}
+                    h={(h - plinth) / 6 - T - 0.02}
+                    d={0.28}
+                    seed={`${item.id}${j}`}
+                    p={[-w / 2 + side / 2, y + T, d / 2 - 0.15]}
+                  />
+                )}
               </group>
             )
           })}
@@ -87,13 +110,36 @@ export function Sideboard({ item }: { item: FurnitureItem }) {
   return (
     <group>
       {legs &&
-        [-1, 1].flatMap((sx) => [-1, 1].map((sz) => <Rod key={`${sx}${sz}`} a={[sx * (w / 2 - 0.05), 0, sz * (d / 2 - 0.05)]} b={[sx * (w / 2 - 0.05), legH, sz * (d / 2 - 0.05)]} radius={0.01} m={steel} />))}
+        [-1, 1].flatMap((sx) =>
+          [-1, 1].map((sz) => (
+            <Rod
+              key={`${sx}${sz}`}
+              a={[sx * (w / 2 - 0.05), 0, sz * (d / 2 - 0.05)]}
+              b={[sx * (w / 2 - 0.05), legH, sz * (d / 2 - 0.05)]}
+              radius={0.01}
+              m={steel}
+            />
+          )),
+        )}
       <B s={[w, boxH, d - 0.03]} p={[0, legH + boxH / 2, -0.015]} m={body} />
       {Array.from({ length: n }, (_, i) => (
         // Sliding doors on two tracks, slightly overlapping.
         <group key={i}>
-          <B s={[dw + 0.02, boxH - 0.04, 0.014]} p={[-w / 2 + dw * (i + 0.5), legH + boxH / 2, d / 2 - 0.03 + (i % 2 ? 0.016 : 0.001)]} m={body} />
-          <B s={[0.012, 0.1, 0.006]} p={[-w / 2 + dw * (i + 0.5) + (i % 2 ? -1 : 1) * (dw / 2 - 0.05), legH + boxH / 2, d / 2 - 0.02 + (i % 2 ? 0.018 : 0.004)]} m={steel} edges={false} />
+          <B
+            s={[dw + 0.02, boxH - 0.04, 0.014]}
+            p={[-w / 2 + dw * (i + 0.5), legH + boxH / 2, d / 2 - 0.03 + (i % 2 ? 0.016 : 0.001)]}
+            m={body}
+          />
+          <B
+            s={[0.012, 0.1, 0.006]}
+            p={[
+              -w / 2 + dw * (i + 0.5) + (i % 2 ? -1 : 1) * (dw / 2 - 0.05),
+              legH + boxH / 2,
+              d / 2 - 0.02 + (i % 2 ? 0.018 : 0.004),
+            ]}
+            m={steel}
+            edges={false}
+          />
         </group>
       ))}
     </group>
@@ -105,8 +151,24 @@ export function Rug({ item }: { item: FurnitureItem }) {
   return (
     <group>
       <B s={[w, h, d]} p={[0, h / 2, 0]} m={mat(item.finish.fabric, 'fabric')} shadow={false} />
-      {item.options.border !== false && <B s={[w - 0.16, 0.002, d - 0.16]} p={[0, h + 0.001, 0]} m={mat('#efe9dd', 'fabric')} edges={false} shadow={false} />}
-      {item.options.border !== false && <B s={[w - 0.2, 0.003, d - 0.2]} p={[0, h + 0.0015, 0]} m={mat(item.finish.fabric, 'fabric')} edges={false} shadow={false} />}
+      {item.options.border !== false && (
+        <B
+          s={[w - 0.16, 0.002, d - 0.16]}
+          p={[0, h + 0.001, 0]}
+          m={mat('#efe9dd', 'fabric')}
+          edges={false}
+          shadow={false}
+        />
+      )}
+      {item.options.border !== false && (
+        <B
+          s={[w - 0.2, 0.003, d - 0.2]}
+          p={[0, h + 0.0015, 0]}
+          m={mat(item.finish.fabric, 'fabric')}
+          edges={false}
+          shadow={false}
+        />
+      )}
     </group>
   )
 }
@@ -136,7 +198,13 @@ export function BlockShelf({ item }: { item: FurnitureItem }) {
                 <B s={[bw, blockH, bd]} p={[0, blockH / 2, 0]} m={block} />
                 {/* the two hollow cells show on the front face */}
                 {[0.25, 0.72].map((t) => (
-                  <B key={t} s={[bw - 0.05, blockH * 0.36, 0.004]} p={[0, blockH * t, bd / 2 + 0.001]} m={hole} edges={false} />
+                  <B
+                    key={t}
+                    s={[bw - 0.05, blockH * 0.36, 0.004]}
+                    p={[0, blockH * t, bd / 2 + 0.001]}
+                    m={hole}
+                    edges={false}
+                  />
                 ))}
               </group>
             ))}

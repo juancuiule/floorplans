@@ -1,0 +1,61 @@
+/* ---------- narrow screens: the panel becomes a bottom sheet ---------- */
+
+@media (max-width: 800px) {
+  .toolbar {
+    right: var(--gutter);
+  }
+
+  .panel {
+    top: auto;
+    left: var(--gutter);
+    width: auto;
+    height: min(52dvh, 560px);
+    bottom: max(var(--gutter), env(safe-area-inset-bottom));
+  }
+
+  .room {
+    max-height: 40%;
+  }
+
+  .popover {
+    position: fixed;
+    top: 64px;
+    left: var(--gutter);
+    right: var(--gutter);
+    width: auto;
+    max-height: calc(100dvh - 80px);
+  }
+
+  .hint {
+    transform: translateX(-50%);
+    bottom: calc(min(52dvh, 560px) + 32px);
+    max-width: calc(100vw - 2 * var(--gutter));
+    text-align: center;
+  }
+
+  [data-panel-closed] .hint {
+    bottom: 24px;
+  }
+
+  .search input,
+  .number input,
+  .select,
+  .camera-select select {
+    font-size: 16px; /* keeps iOS from zooming into the field */
+  }
+}
+
+@media (pointer: coarse) {
+  .chips button {
+    min-height: 34px;
+  }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .swatches button,
+  .custom-color {
+    width: 30px;
+    height: 30px;
+  }
+}

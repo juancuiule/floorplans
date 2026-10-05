@@ -1,0 +1,93 @@
+/* ---------- in the room ---------- */
+
+.room {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 40%;
+  border-top: 1px solid var(--line);
+  background: #f3f2ee;
+}
+
+.room-head button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.room-head button:focus-visible {
+  outline-offset: -2px;
+}
+
+.room-head .count {
+  color: var(--muted);
+}
+
+.room-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.room-list[hidden] {
+  display: none;
+}
+
+.room-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placed-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.placed-row.on {
+  background: var(--selected);
+  box-shadow: inset 0 0 0 1px rgb(47 111 214 / 0.35);
+}
+
+@media (hover: hover) {
+  .placed-row:not(.on):hover {
+    background: var(--hover);
+  }
+}
+
+.placed-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+}
+
+.placed-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.placed-row .icon-btn {
+  opacity: 0.8;
+}

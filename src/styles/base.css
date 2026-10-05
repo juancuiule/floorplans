@@ -1,0 +1,108 @@
+/* Design tokens, the page and the app frame. */
+
+:root {
+  --bg: #ecebe7;
+  /* Opaque on purpose: a backdrop blur over the live canvas re-blurs every frame. */
+  --panel: #f8f7f4;
+  --surface: #fff;
+  --ink: #2b2925;
+  --muted: #6b665d; /* 5.3:1 on --panel */
+  --line: rgb(43 41 37 / 0.12);
+  --line-strong: rgb(43 41 37 / 0.24);
+  --hover: rgb(43 41 37 / 0.06);
+  --press: rgb(43 41 37 / 0.1);
+  --accent: #2b2925;
+  --accent-ink: #fff;
+  --focus: #2f6fd6; /* 4.5:1 on --panel, 3:1 on --accent */
+  --selected: rgb(47 111 214 / 0.1);
+  --danger: #b42318;
+  --warn: #8a5200;
+  --tip: #1e1d1b;
+  --radius: 10px;
+  --radius-sm: 7px;
+  --gutter: 16px;
+  --panel-w: 320px;
+  --shadow: 0 0 0 1px var(--line), 0 8px 30px rgb(0 0 0 / 0.06);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+.icon {
+  flex: none;
+  display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:where(button, input, select, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 1px 0 var(--line-strong);
+  font: inherit;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.app.placing canvas {
+  cursor: crosshair;
+}

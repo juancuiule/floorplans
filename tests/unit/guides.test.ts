@@ -167,7 +167,17 @@ describe('frames and guideMove', () => {
   })
 
   it('has nothing to do for ceiling pieces', () => {
-    const pendant = { kind: 'lamp', id: 'p', type: 'pendant', at: [2, 2.6, 1], rotation: 0, on: true, brightness: 1, warmth: 2700, color: '#000' } as const
+    const pendant = {
+      kind: 'lamp',
+      id: 'p',
+      type: 'pendant',
+      at: [2, 2.6, 1],
+      rotation: 0,
+      on: true,
+      brightness: 1,
+      warmth: 2700,
+      color: '#000',
+    } as const
     expect(guideMove(buildGuideCtx([], new Set()), { ...pendant, at: [2, 2.6, 1] }, [])).toBeNull()
   })
 })

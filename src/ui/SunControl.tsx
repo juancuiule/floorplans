@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { plan } from '../project/plan'
 import { LIGHTING_PRESETS, PLAY_SPEEDS, useView, type Lighting, type PlaySpeed } from '../store'
@@ -31,7 +40,8 @@ const SPEED_LABEL: Record<PlaySpeed, string> = { 0.5: '½×', 1: '1×', 2: '2×'
 // Compass rose, read like a map: north up.
 const ROSE: (Compass | null)[] = ['NW', 'N', 'NE', 'W', null, 'E', 'SW', 'S', 'SE']
 
-const isTyping = (t: EventTarget | null) => (t as HTMLElement | null)?.closest?.('input, select, textarea, [contenteditable="true"]')
+const isTyping = (t: EventTarget | null) =>
+  (t as HTMLElement | null)?.closest?.('input, select, textarea, [contenteditable="true"]')
 
 /** , and . step the time by 15 minutes ([ and ] belong to the editor). */
 function useSunShortcuts() {
@@ -121,7 +131,15 @@ export function SunControl() {
 
 function PlayIcon({ playing }: { playing: boolean }) {
   return (
-    <svg className="icon" width={16} height={16} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <svg
+      className="icon"
+      width={16}
+      height={16}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
       {playing ? <path d="M6 4.5h2.5v11H6zM11.5 4.5H14v11h-2.5z" /> : <path d="M6.5 4.2v11.6L15.5 10z" />}
     </svg>
   )
@@ -174,11 +192,12 @@ function SunPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: 
   const night = lighting === 'evening'
 
   useEffect(() => {
-    ref.current?.focus({ preventScroll: true })
+    const panel = ref.current
+    panel?.focus({ preventScroll: true })
     const trigger = triggerRef.current
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node
-      if (!ref.current?.contains(t) && !trigger?.contains(t)) onClose()
+      if (!panel?.contains(t) && !trigger?.contains(t)) onClose()
     }
     // Esc closes from anywhere (the canvas has focus after a click in the scene), before the editor's Esc.
     const onKey = (e: KeyboardEvent) => {
@@ -192,7 +211,12 @@ function SunPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: 
     return () => {
       document.removeEventListener('pointerdown', onDown)
       window.removeEventListener('keydown', onKey, true)
-      if (!document.activeElement || document.activeElement === document.body || ref.current?.contains(document.activeElement)) trigger?.focus()
+      if (
+        !document.activeElement ||
+        document.activeElement === document.body ||
+        panel?.contains(document.activeElement)
+      )
+        trigger?.focus()
     }
   }, [onClose, triggerRef])
 
@@ -261,7 +285,10 @@ function SunPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: 
             {formatMinutes(minutes)}
           </output>
         </div>
-        <div className="sun-slider" style={{ '--rise': pct(times.sunrise), '--set': pct(times.sunset) } as CSSProperties}>
+        <div
+          className="sun-slider"
+          style={{ '--rise': pct(times.sunrise), '--set': pct(times.sunset) } as CSSProperties}
+        >
           <input
             id={`${id}-time`}
             type="range"
@@ -334,7 +361,13 @@ function SunPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: 
           {QUICK_DATES.map((q) => {
             const iso = `${year}-${q.md}`
             return (
-              <button key={q.md} type="button" aria-pressed={date === iso} title={q.tip} onClick={() => setSun({ date: iso })}>
+              <button
+                key={q.md}
+                type="button"
+                aria-pressed={date === iso}
+                title={q.tip}
+                onClick={() => setSun({ date: iso })}
+              >
                 {q.label}
               </button>
             )
@@ -350,12 +383,20 @@ function SunPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: 
           <h3 className="group-label" id={`${id}-facing`}>
             Balcony faces
           </h3>
-          <p className="sun-hint">Saved with the apartment. {facingName ? `Facing ${facingName}.` : `Bearing ${Math.round(facing)}°.`}</p>
+          <p className="sun-hint">
+            Saved with the apartment. {facingName ? `Facing ${facingName}.` : `Bearing ${Math.round(facing)}°.`}
+          </p>
         </div>
         <div className="rose" role="radiogroup" aria-labelledby={`${id}-facing`}>
           {ROSE.map((c, i) =>
             c ? (
-              <button key={c} type="button" role="radio" aria-checked={facingName === c} onClick={() => setSun({ facing: compassBearing(c) })}>
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={facingName === c}
+                onClick={() => setSun({ facing: compassBearing(c) })}
+              >
                 {c}
               </button>
             ) : (

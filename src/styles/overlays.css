@@ -1,0 +1,57 @@
+/* ---------- scene overlays ---------- */
+
+.scene {
+  isolation: isolate;
+}
+
+.tv-video {
+  background: #000;
+}
+
+.tv-video iframe {
+  display: block;
+  border: 0;
+}
+
+.text-option {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  font-size: 12px;
+}
+
+.text-option[aria-invalid='true'] {
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.warn-text {
+  color: var(--warn);
+}
+
+/* The TV's YouTube player, placed over the canvas with CSS 3D transforms (see Devices.tsx). */
+.scene-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tv-video-camera {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.tv-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+}

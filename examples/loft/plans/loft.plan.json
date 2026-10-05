@@ -1,0 +1,549 @@
+{
+  "version": 1,
+  "id": "loft",
+  "name": "Loft",
+  "subtitle": "6.00 × 4.20 m · Madrid · window facing south",
+  "location": {
+    "label": "Madrid",
+    "lat": 40.4168,
+    "lon": -3.7038,
+    "tz": 1
+  },
+  "materials": {
+    "plaster": {
+      "color": "#f3f1ec",
+      "roughness": 0.95
+    },
+    "ceiling": {
+      "color": "#f7f6f2",
+      "roughness": 0.95
+    },
+    "oakFloor": {
+      "color": "#e2cba8",
+      "roughness": 0.7,
+      "pattern": {
+        "kind": "planks",
+        "width": 0.19,
+        "length": 1.2
+      }
+    },
+    "bathFloor": {
+      "color": "#c4c1bb",
+      "roughness": 0.6,
+      "pattern": {
+        "kind": "tiles",
+        "width": 0.6,
+        "height": 0.6,
+        "grout": "#a9a59e"
+      }
+    },
+    "tile": {
+      "color": "#f6f6f4",
+      "roughness": 0.35,
+      "pattern": {
+        "kind": "tiles",
+        "width": 0.6,
+        "height": 0.3,
+        "grout": "#9c9a96"
+      }
+    },
+    "oakDoor": {
+      "color": "#c8a172",
+      "roughness": 0.7
+    },
+    "steelFrame": {
+      "color": "#8c8f92",
+      "roughness": 0.5,
+      "metalness": 0.3
+    },
+    "aluminum": {
+      "color": "#eef0f1",
+      "roughness": 0.45,
+      "metalness": 0.1
+    },
+    "glass": {
+      "color": "#cfe4ec",
+      "roughness": 0.05,
+      "opacity": 0.22
+    },
+    "concrete": {
+      "color": "#c7c3bc",
+      "roughness": 1
+    },
+    "balconyFloor": {
+      "color": "#c9c4bb",
+      "roughness": 0.85,
+      "pattern": {
+        "kind": "tiles",
+        "width": 0.45,
+        "height": 0.45,
+        "grout": "#aca79e"
+      }
+    },
+    "ceramic": {
+      "color": "#fbfbfa",
+      "roughness": 0.2
+    },
+    "cabinet": {
+      "color": "#ebe8e2",
+      "roughness": 0.7
+    },
+    "countertop": {
+      "color": "#d6d2ca",
+      "roughness": 0.5
+    },
+    "appliance": {
+      "color": "#e2e3e4",
+      "roughness": 0.35,
+      "metalness": 0.2
+    },
+    "blackGlass": {
+      "color": "#1f2022",
+      "roughness": 0.15
+    },
+    "steel": {
+      "color": "#b9bcbf",
+      "roughness": 0.3,
+      "metalness": 0.7
+    },
+    "downlight": {
+      "color": "#ffffff",
+      "roughness": 0.5,
+      "emissive": "#fff6e0"
+    }
+  },
+  "shell": {
+    "walls": [
+      {
+        "id": "entry",
+        "a": [
+          -0.1,
+          -0.2
+        ],
+        "b": [
+          -0.1,
+          4.4
+        ],
+        "thickness": 0.2,
+        "height": 2.7,
+        "kind": "exterior",
+        "material": "plaster",
+        "openings": [
+          {
+            "id": "front-door",
+            "kind": "door",
+            "offset": 2.9,
+            "width": 0.9,
+            "height": 2.05,
+            "leaf": {
+              "hinge": "a",
+              "swing": -1,
+              "openDeg": 20,
+              "material": "oakDoor",
+              "frameMaterial": "oakDoor"
+            }
+          }
+        ]
+      },
+      {
+        "id": "side-a",
+        "a": [
+          0,
+          -0.1
+        ],
+        "b": [
+          6.2,
+          -0.1
+        ],
+        "thickness": 0.2,
+        "height": 2.7,
+        "kind": "exterior",
+        "material": "plaster"
+      },
+      {
+        "id": "side-b",
+        "a": [
+          0,
+          4.3
+        ],
+        "b": [
+          6.2,
+          4.3
+        ],
+        "thickness": 0.2,
+        "height": 2.7,
+        "kind": "exterior",
+        "material": "plaster"
+      },
+      {
+        "id": "facade",
+        "a": [
+          6.1,
+          0
+        ],
+        "b": [
+          6.1,
+          4.2
+        ],
+        "thickness": 0.2,
+        "height": 2.7,
+        "kind": "exterior",
+        "material": "plaster",
+        "openings": [
+          {
+            "id": "window",
+            "kind": "window",
+            "offset": 0.9,
+            "width": 2.4,
+            "height": 2.2,
+            "sill": 0,
+            "glazing": {
+              "panels": 2,
+              "frameMaterial": "aluminum"
+            }
+          }
+        ]
+      },
+      {
+        "id": "bath-front",
+        "a": [
+          0,
+          1.85
+        ],
+        "b": [
+          2.0,
+          1.85
+        ],
+        "thickness": 0.1,
+        "height": 2.7,
+        "kind": "interior",
+        "material": "plaster",
+        "openings": [
+          {
+            "id": "bath-door",
+            "kind": "door",
+            "offset": 0.2,
+            "width": 0.8,
+            "height": 2.05,
+            "leaf": {
+              "hinge": "a",
+              "swing": -1,
+              "openDeg": 70,
+              "material": "oakDoor",
+              "frameMaterial": "steelFrame"
+            }
+          }
+        ]
+      },
+      {
+        "id": "bath-side",
+        "a": [
+          2.05,
+          0
+        ],
+        "b": [
+          2.05,
+          1.9
+        ],
+        "thickness": 0.1,
+        "height": 2.7,
+        "kind": "interior",
+        "material": "plaster"
+      }
+    ],
+    "bulges": [
+      {
+        "id": "tile-back",
+        "host": "bath-side",
+        "min": [
+          1.99,
+          0,
+          0
+        ],
+        "max": [
+          2.0,
+          2.2,
+          1.8
+        ],
+        "material": "tile"
+      },
+      {
+        "id": "tile-side",
+        "host": "side-a",
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          1.99,
+          2.2,
+          0.01
+        ],
+        "material": "tile"
+      }
+    ],
+    "rooms": [
+      {
+        "id": "bath",
+        "name": "Bathroom",
+        "rect": [
+          0,
+          0,
+          2.0,
+          1.8
+        ],
+        "floor": "bathFloor",
+        "label": true
+      },
+      {
+        "id": "kitchen",
+        "name": "Kitchen",
+        "rect": [
+          0,
+          1.9,
+          2.1,
+          4.2
+        ],
+        "label": true
+      },
+      {
+        "id": "living",
+        "name": "Living",
+        "rect": [
+          2.1,
+          0,
+          6.0,
+          4.2
+        ],
+        "label": true
+      }
+    ],
+    "ceilings": [
+      {
+        "id": "all",
+        "rect": [
+          0,
+          0,
+          6.0,
+          4.2
+        ],
+        "height": 2.7,
+        "material": "ceiling"
+      }
+    ],
+    "baseFloors": [
+      {
+        "id": "hall",
+        "rect": [
+          0,
+          0,
+          2.1,
+          4.2
+        ],
+        "material": "floorHall"
+      },
+      {
+        "id": "main",
+        "rect": [
+          2.1,
+          0,
+          6.2,
+          4.2
+        ],
+        "material": "floorMain"
+      }
+    ],
+    "accentPanels": [
+      {
+        "wall": "side-a",
+        "min": [
+          2.1,
+          0,
+          0
+        ],
+        "max": [
+          6.0,
+          2.7,
+          0.001
+        ]
+      },
+      {
+        "wall": "side-b",
+        "min": [
+          2.1,
+          0,
+          4.199
+        ],
+        "max": [
+          6.0,
+          2.7,
+          4.2
+        ]
+      }
+    ],
+    "slab": {
+      "rect": [
+        -0.2,
+        -0.2,
+        6.2,
+        4.4
+      ],
+      "thickness": 0.18,
+      "material": "concrete"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "toilet",
+      "type": "toilet",
+      "position": [
+        0.33,
+        0,
+        0.5
+      ],
+      "rotation": 90
+    },
+    {
+      "id": "basin",
+      "type": "basin",
+      "position": [
+        0.2,
+        0,
+        1.3
+      ],
+      "rotation": 90,
+      "size": [
+        0.46,
+        0.86,
+        0.38
+      ]
+    },
+    {
+      "id": "shower-tray",
+      "type": "showerTray",
+      "position": [
+        1.6,
+        0,
+        0.4
+      ],
+      "size": [
+        0.8,
+        0.06,
+        0.8
+      ]
+    },
+    {
+      "id": "counter",
+      "type": "counter",
+      "position": [
+        1.0,
+        0,
+        3.9000000000000004
+      ],
+      "rotation": 180,
+      "size": [
+        2.0,
+        0.9,
+        0.6
+      ]
+    },
+    {
+      "id": "kitchen-sink",
+      "type": "kitchenSink",
+      "position": [
+        0.7,
+        0.9,
+        3.92
+      ],
+      "rotation": 180,
+      "size": [
+        0.45,
+        0.18,
+        0.38
+      ]
+    },
+    {
+      "id": "cooktop",
+      "type": "cooktop",
+      "position": [
+        1.5,
+        0.9,
+        3.92
+      ],
+      "rotation": 180,
+      "size": [
+        0.3,
+        0.01,
+        0.5
+      ]
+    },
+    {
+      "id": "dl-bath",
+      "type": "downlight",
+      "position": [
+        1.0,
+        2.7,
+        0.9
+      ]
+    },
+    {
+      "id": "dl-main",
+      "type": "downlight",
+      "position": [
+        4.0,
+        2.7,
+        2.1
+      ]
+    }
+  ],
+  "walls": {
+    "labels": {
+      "entry": "Entry wall",
+      "side-a": "Party wall, left",
+      "side-b": "Party wall, right",
+      "facade": "Facade"
+    },
+    "roles": {
+      "facade": "facade",
+      "side-a": "party",
+      "side-b": "party"
+    },
+    "removable": {
+      "bath-front": {
+        "label": "Bathroom ↔ kitchen",
+        "note": "Takes the bathroom door.",
+        "floors": [
+          {
+            "rect": [
+              0,
+              1.8,
+              2.0,
+              1.85
+            ],
+            "material": "bathFloor"
+          }
+        ]
+      },
+      "bath-side": {
+        "label": "Bathroom ↔ living",
+        "note": "Opens the bathroom onto the living room; its tiles go.",
+        "floors": [
+          {
+            "rect": [
+              2.0,
+              0,
+              2.05,
+              1.8
+            ],
+            "material": "bathFloor"
+          }
+        ]
+      }
+    },
+    "accent": {
+      "side-a": "Left wall",
+      "side-b": "Right wall"
+    }
+  }
+}

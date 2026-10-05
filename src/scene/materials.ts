@@ -97,7 +97,11 @@ export function setFinishes(next: Finishes): boolean {
  * (planks, tiles) repeated at true scale; without dims the plain color is used.
  * `origin` (meters) shifts the pattern, e.g. to line floors up across rooms.
  */
-export function makeMaterial(id: string, dims?: [number, number], origin: [number, number] = [0, 0]): THREE.MeshStandardMaterial {
+export function makeMaterial(
+  id: string,
+  dims?: [number, number],
+  origin: [number, number] = [0, 0],
+): THREE.MeshStandardMaterial {
   const def = defOf(id)
   const opacity = def.opacity ?? 1
   const map = mapOf(def, dims, origin)

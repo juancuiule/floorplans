@@ -34,8 +34,24 @@ export function Clearances() {
         const b: Vec3 = [c.to[0], Y, c.to[1]]
         return (
           <group key={c.side}>
-            <Line points={[a, b]} color={COLOR[c.level]} lineWidth={2} dashed dashSize={0.05} gapSize={0.035} depthTest={false} transparent renderOrder={11} raycast={noRaycast} />
-            <Html position={[(a[0] + b[0]) / 2, Y, (a[2] + b[2]) / 2]} center zIndexRange={[20, 10]} className={`clearance-label ${c.level}`}>
+            <Line
+              points={[a, b]}
+              color={COLOR[c.level]}
+              lineWidth={2}
+              dashed
+              dashSize={0.05}
+              gapSize={0.035}
+              depthTest={false}
+              transparent
+              renderOrder={11}
+              raycast={noRaycast}
+            />
+            <Html
+              position={[(a[0] + b[0]) / 2, Y, (a[2] + b[2]) / 2]}
+              center
+              zIndexRange={[20, 10]}
+              className={`clearance-label ${c.level}`}
+            >
               <span data-clearance={c.side}>{formatCm(c.dist)}</span>
             </Html>
           </group>

@@ -23,19 +23,25 @@ dist-ssr
 *.sln
 *.sw?
 
-# Scratch decor files used by test runs (?decor=<name>). Named layouts
-# (data/decor.<slug>.json) are real design variants and stay versioned.
-data/decor.e2e*.json
-data/decor.test*.json
-data/decor.shot*.json
-data/decor.snap.json
-data/decor.furn.json
-data/decor.edit.json
-data/decor.objects.json
-data/decor.devices.json
+# Scratch layouts written by test runs (?decor=<name>), in any workspace. Named
+# layouts (layouts/decor.<slug>.json) are real design variants and stay versioned.
+examples/*/layouts/decor.e2e*.json
+examples/*/layouts/decor.test*.json
+examples/*/layouts/decor.shot*.json
+examples/*/layouts/decor.snap.json
+examples/*/layouts/decor.furn.json
+examples/*/layouts/decor.edit.json
+examples/*/layouts/decor.objects.json
+examples/*/layouts/decor.devices.json
 
 # Test output (screenshots from pnpm test:e2e)
 test-results
 
 # Agent worktrees
 .claude/worktrees/
+
+# Everyone's spaces: plans, layouts and artwork (FLOORPLAN_DATA)
+storage
+
+# The browser tests' throwaway data folder
+tests/e2e/.data

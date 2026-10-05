@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { plan } from '../../src/project/plan'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_FINISHES, normalizeFinishes } from '../../src/model/finishes'
 import { materials, shell } from '../../src/project'
@@ -27,10 +28,16 @@ describe('paintable faces', () => {
 
 describe('paint finishes', () => {
   it('reads face colors and the ceiling, dropping junk', () => {
-    const f = normalizeFinishes({ paint: { 'side-bath:+:main-room': '#5B5C5F', bad: '#fff', 'x:+:y': 'red' }, ceilingPaint: '#ece4d6' })
+    const f = normalizeFinishes(
+      {
+        paint: { 'side-bath:+:main-room': '#5B5C5F', bad: '#fff', 'x:+:y': 'red' },
+        ceilingPaint: '#ece4d6',
+      },
+      plan,
+    )
     expect(f.paint).toEqual({ 'side-bath:+:main-room': '#5b5c5f' })
     expect(f.ceilingPaint).toBe('#ece4d6')
-    expect(normalizeFinishes({}).paint).toEqual({})
+    expect(normalizeFinishes({}, plan).paint).toEqual({})
   })
 
   it('shows a face layer only when that face is painted', () => {
@@ -41,10 +48,10 @@ describe('paint finishes', () => {
   })
 
   it('turns an old accent wall into the painted face it was on', () => {
-    const old = normalizeFinishes({ accentWall: 'side-bath', accentColor: '#5b5c5f' })
+    const old = normalizeFinishes({ accentWall: 'side-bath', accentColor: '#5b5c5f' }, plan)
     const f = migrateAccent(old, faces, shell.walls)
     expect(f.accentWall).toBe('none')
     expect(f.paint).toEqual({ 'side-bath:+:main-room': '#5b5c5f' })
-    expect(migrateAccent(normalizeFinishes({}), faces, shell.walls).paint).toEqual({})
+    expect(migrateAccent(normalizeFinishes({}, plan), faces, shell.walls).paint).toEqual({})
   })
 })

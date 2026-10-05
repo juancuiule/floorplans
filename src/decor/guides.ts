@@ -1,7 +1,19 @@
 import type { DecorItem } from '../model/decor'
 import type { Vec3 } from '../model/types'
 import type { Guides } from './edit'
-import { backedBox, boxIn, FLOOR_FRAME, frameDelta, framePoint, isWallItem, onPlane, unionBox, wallFrameOf, type Box, type Frame } from './extent'
+import {
+  backedBox,
+  boxIn,
+  FLOOR_FRAME,
+  frameDelta,
+  framePoint,
+  isWallItem,
+  onPlane,
+  unionBox,
+  wallFrameOf,
+  type Box,
+  type Frame,
+} from './extent'
 import { mountOf } from './placement'
 
 // Smart guides (Figma-like) for a moving item or selection: its edges and center
@@ -115,7 +127,8 @@ function bestSpacing(moving: Box, others: Box[], axis: Axis, tol: number): numbe
 const shift = (b: Box, du: number, dv: number): Box => ({ u0: b.u0 + du, u1: b.u1 + du, v0: b.v0 + dv, v1: b.v1 + dv })
 
 /** Where to put a point on `axis` and the cross axis, as frame (u, v). */
-const pt = (axis: Axis, along: number, across: number): [number, number] => (axis === 'u' ? [along, across] : [across, along])
+const pt = (axis: Axis, along: number, across: number): [number, number] =>
+  axis === 'u' ? [along, across] : [across, along]
 
 export const cmLabel = (m: number) => `${Math.round(m * 1000) / 10} cm`
 
@@ -129,7 +142,11 @@ export function snapBox(moving: Box, others: Box[], opts: SnapOpts = {}): SnapRe
   let magnet = false
   for (const axis of ['u', 'v'] as Axis[]) {
     if ((axis === 'u' && opts.lockU) || (axis === 'v' && opts.lockV)) continue
-    const a = bestAlign(span(moving, axis), others.map((b) => span(b, axis)), tol)
+    const a = bestAlign(
+      span(moving, axis),
+      others.map((b) => span(b, axis)),
+      tol,
+    )
     const s = bestSpacing(moving, others, axis, tol)
     // Lining up wins a tie with spacing.
     let d = a !== null && (s === null || Math.abs(a) <= Math.abs(s) + 1e-6) ? a : s
@@ -163,7 +180,8 @@ export function snapBox(moving: Box, others: Box[], opts: SnapOpts = {}): SnapRe
         }
       }
     }
-    for (const [key, [lo, hi]] of found) lines.push({ a: pt(axis, key / 1000, lo), b: pt(axis, key / 1000, hi), kind: 'align' })
+    for (const [key, [lo, hi]] of found)
+      lines.push({ a: pt(axis, key / 1000, lo), b: pt(axis, key / 1000, hi), kind: 'align' })
   }
 
   if (opts.magnetV != null && (magnet || Math.abs((m.v0 + m.v1) / 2 - opts.magnetV) < EPS)) {
@@ -175,7 +193,9 @@ export function snapBox(moving: Box, others: Box[], opts: SnapOpts = {}): SnapRe
   // Equal spacing: every gap in the row that matches one of the moving box's gaps.
   for (const axis of ['u', 'v'] as Axis[]) {
     const x = other(axis)
-    const row = [...others.filter((b) => overlaps(span(b, x), span(m, x))), m].sort((p, q) => span(p, axis)[0] - span(q, axis)[0])
+    const row = [...others.filter((b) => overlaps(span(b, x), span(m, x))), m].sort(
+      (p, q) => span(p, axis)[0] - span(q, axis)[0],
+    )
     const idx = row.indexOf(m)
     const pairs: { lo: Box; hi: Box; g: number }[] = []
     for (let i = 1; i < row.length; i++) {
@@ -254,8 +274,10 @@ export function worldGuides(g: GuideMove): Guides | null {
   const { lines, labels } = g.result
   if (!lines.length) return null
   const out: Guides = { align: [], gallery: [], spacing: [], labels: [] }
-  for (const l of lines) out[l.kind].push(framePoint(g.frame, l.a[0], l.a[1], g.lift), framePoint(g.frame, l.b[0], l.b[1], g.lift))
-  for (const l of labels) out.labels.push({ at: framePoint(g.frame, l.at[0], l.at[1], g.lift), text: l.text, kind: l.kind })
+  for (const l of lines)
+    out[l.kind].push(framePoint(g.frame, l.a[0], l.a[1], g.lift), framePoint(g.frame, l.b[0], l.b[1], g.lift))
+  for (const l of labels)
+    out.labels.push({ at: framePoint(g.frame, l.at[0], l.at[1], g.lift), text: l.text, kind: l.kind })
   return out
 }
 
@@ -271,13 +293,25 @@ export interface GuideMove {
  * Snaps a moving selection (already moved to follow the pointer) by its combined
  * box on the lead's frame.
  */
-export function guideMove(ctx: GuideCtx, lead: DecorItem, members: DecorItem[], opts: { lockU?: boolean; lockV?: boolean } = {}): GuideMove | null {
+export function guideMove(
+  ctx: GuideCtx,
+  lead: DecorItem,
+  members: DecorItem[],
+  opts: { lockU?: boolean; lockV?: boolean } = {},
+): GuideMove | null {
   const frame = frameFor(lead)
   if (!frame) return null
-  const inFrame = members.filter((i) => (frame.kind === 'wall' ? onPlane(i, frame) : !isWallItem(i) && mountOf(i) === 'surface'))
+  const inFrame = members.filter((i) =>
+    frame.kind === 'wall' ? onPlane(i, frame) : !isWallItem(i) && mountOf(i) === 'surface',
+  )
   if (!inFrame.length) return null
   const box = unionBox(inFrame.map((i) => boxIn(i, frame)))
   const magnetV = frame.kind === 'wall' && inFrame.every((i) => i.kind === 'artwork') ? GALLERY_LINE : null
   const result = snapBox(box, targets(ctx, frame), { ...opts, magnetV })
-  return { delta: frameDelta(frame, result.du, result.dv), frame, result, lift: frame.kind === 'wall' ? 0.006 : lead.at[1] + 0.012 }
+  return {
+    delta: frameDelta(frame, result.du, result.dv),
+    frame,
+    result,
+    lift: frame.kind === 'wall' ? 0.006 : lead.at[1] + 0.012,
+  }
 }

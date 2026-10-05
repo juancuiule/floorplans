@@ -72,7 +72,13 @@ const down = new THREE.Vector3(0, -1, 0)
 const n = new THREE.Vector3()
 
 /** Height of the first up-facing surface straight below (x, from, z), or null. */
-export function surfaceBelow(root: THREE.Object3D, x: number, z: number, from: number, opts: RestOpts = {}): number | null {
+export function surfaceBelow(
+  root: THREE.Object3D,
+  x: number,
+  z: number,
+  from: number,
+  opts: RestOpts = {},
+): number | null {
   rc.set(origin.set(x, from, z), down)
   rc.near = 0
   rc.far = from + 1
@@ -94,7 +100,14 @@ export function surfaceBelow(root: THREE.Object3D, x: number, z: number, from: n
  * Height an item comes to rest at around (x, z): the highest surface under its
  * footprint, no higher than `from`. Null when nothing is under it.
  */
-export function restHeight(root: THREE.Object3D, item: DecorItem, x: number, z: number, from: number, opts: RestOpts = {}): number | null {
+export function restHeight(
+  root: THREE.Object3D,
+  item: DecorItem,
+  x: number,
+  z: number,
+  from: number,
+  opts: RestOpts = {},
+): number | null {
   // World matrices are those of the last render (the pieces that moved since are skipped).
   let best: number | null = null
   for (const [px, pz] of restPoints(item, x, z)) {

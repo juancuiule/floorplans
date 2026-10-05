@@ -1,5 +1,6 @@
 import type { FurnitureItem } from '../../../model/decor'
-import { B, Books, FingerHole, mat, T } from './common'
+import { B, Books, FingerHole, T } from './common'
+import { mat } from './furnitureMaterials'
 import { Bedding } from './Sleep'
 
 /**
@@ -45,7 +46,11 @@ export function LoftBed({ item }: { item: FurnitureItem }) {
           return (
             <group key={i}>
               <B s={[cw - gap, lowH - gap, T]} p={[cx, plinth + lowH / 2, front - T / 2]} m={body} />
-              <B s={[cw - gap, innerH - lowH - gap, T]} p={[cx, plinth + lowH + (innerH - lowH) / 2, front - T / 2]} m={body} />
+              <B
+                s={[cw - gap, innerH - lowH - gap, T]}
+                p={[cx, plinth + lowH + (innerH - lowH) / 2, front - T / 2]}
+                m={body}
+              />
               <FingerHole p={[cx, plinth + lowH - 0.06, front + 0.001]} vertical={false} />
               <FingerHole p={[cx, h - T - 0.06, front + 0.001]} vertical={false} />
             </group>
@@ -56,9 +61,20 @@ export function LoftBed({ item }: { item: FurnitureItem }) {
           {/* open shelves: a dark recess with a shelf of books */}
           <B s={[pw - 2 * T, innerH, 0.004]} p={[px, plinth + innerH / 2, front - 0.3]} m={recess} edges={false} />
           <B s={[pw - 2 * T, T, 0.3]} p={[px, plinth + innerH / 2, front - 0.15]} m={body} />
-          <Books w={pw - 0.1} h={innerH / 2 - T - 0.02} d={0.28} seed={item.id} p={[px, plinth + innerH / 2 + T / 2, front - 0.15]} />
+          <Books
+            w={pw - 0.1}
+            h={innerH / 2 - T - 0.02}
+            d={0.28}
+            seed={item.id}
+            p={[px, plinth + innerH / 2 + T / 2, front - 0.15]}
+          />
           {[-1, 1].map((e) => (
-            <B key={e} s={[T, innerH, 0.3]} p={[px + e * (pw / 2 - T / 2), plinth + innerH / 2, front - 0.15]} m={body} />
+            <B
+              key={e}
+              s={[T, innerH, 0.3]}
+              p={[px + e * (pw / 2 - T / 2), plinth + innerH / 2, front - 0.15]}
+              m={body}
+            />
           ))}
         </group>
       )}

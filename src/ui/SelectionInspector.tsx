@@ -1,12 +1,21 @@
 import { useMemo, useState } from 'react'
 import { GALLERY_LINE } from '../decor/guides'
-import { arrangeFrame, groupName, hangSelection, matchSelectionSize, pieceBelow, selectedGroup, selectionSummary } from '../decor/selection'
+import {
+  arrangeFrame,
+  groupName,
+  hangSelection,
+  matchSelectionSize,
+  pieceBelow,
+  selectedGroup,
+  selectionSummary,
+} from '../decor/selection'
 import { useDecor } from '../decor/store'
 import type { DecorItem } from '../model/decor'
 import { Chips, Field, NumberInput, Section } from './controls'
 import { cm, itemLabel } from './format'
-import { Icon, itemIcon } from './icons'
-import { MOD } from './ShortcutsPopover'
+import { Icon } from './icons'
+import { itemIcon } from './itemIcons'
+import { MOD } from './format'
 import './selection.css'
 
 // The panel for a multi-selection: what is selected, its group, and the
@@ -32,9 +41,21 @@ export function SelectionInspector() {
         </span>
         <div className="i-title">
           <h2>{gid ? groupName(gid) : selectionSummary(sel)}</h2>
-          <p>{gid ? `Group · ${selectionSummary(sel)}` : frame?.kind === 'wall' ? 'Selected together · on one wall' : 'Selected together'}</p>
+          <p>
+            {gid
+              ? `Group · ${selectionSummary(sel)}`
+              : frame?.kind === 'wall'
+                ? 'Selected together · on one wall'
+                : 'Selected together'}
+          </p>
         </div>
-        <button type="button" className="btn" onClick={() => select(null)} aria-keyshortcuts="Escape" title="Clear the selection (Esc)">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => select(null)}
+          aria-keyshortcuts="Escape"
+          title="Clear the selection (Esc)"
+        >
           Done
         </button>
       </header>
@@ -67,7 +88,9 @@ export function SelectionInspector() {
         </Section>
       ) : (
         <Section title="Group">
-          <p className="note">Group them to move them as one and keep the arrangement. It shows up in the list below.</p>
+          <p className="note">
+            Group them to move them as one and keep the arrangement. It shows up in the list below.
+          </p>
           <div className="actions">
             <button type="button" className="btn" onClick={group} aria-keyshortcuts="Meta+G Control+G">
               <Icon name="layers" size={14} /> Group <kbd>{MOD}G</kbd>
@@ -82,8 +105,19 @@ export function SelectionInspector() {
         <ul className="sel-list">
           {sel.map((i) => (
             <li key={i.id}>
-              <button type="button" className="placed-main" onClick={() => selectMany([i.id], i.id)} title="Select just this one">
-                <span className="tile small">{i.kind === 'artwork' ? <img src={i.image} alt="" loading="lazy" decoding="async" /> : <Icon name={itemIcon(i)} size={16} />}</span>
+              <button
+                type="button"
+                className="placed-main"
+                onClick={() => selectMany([i.id], i.id)}
+                title="Select just this one"
+              >
+                <span className="tile small">
+                  {i.kind === 'artwork' ? (
+                    <img src={i.image} alt="" loading="lazy" decoding="async" />
+                  ) : (
+                    <Icon name={itemIcon(i)} size={16} />
+                  )}
+                </span>
                 <span className="placed-name">{itemLabel(i)}</span>
                 {i.kind === 'artwork' && (
                   <span className="sel-meta">
@@ -101,7 +135,12 @@ export function SelectionInspector() {
           <button type="button" className="btn" onClick={duplicateSelection} aria-keyshortcuts="Meta+D Control+D">
             <Icon name="duplicate" size={14} /> Duplicate
           </button>
-          <button type="button" className="btn danger" onClick={() => removeMany(selectedIds)} aria-keyshortcuts="Delete">
+          <button
+            type="button"
+            className="btn danger"
+            onClick={() => removeMany(selectedIds)}
+            aria-keyshortcuts="Delete"
+          >
             <Icon name="trash" size={14} /> Delete {sel.length}
           </button>
         </div>
@@ -142,14 +181,25 @@ function GallerySection({ count, over }: { count: number; over: string | null })
         <NumberInput name="center" value={center} min={60} max={220} unit="cm" onChange={setCenter} />
       </Field>
       <div className="actions">
-        <button type="button" className="btn solid" onClick={() => hangSelection({ layout, gap, centerV: center / 100 })}>
+        <button
+          type="button"
+          className="btn solid"
+          onClick={() => hangSelection({ layout, gap, centerV: center / 100 })}
+        >
           Hang {count} pieces
         </button>
-        <button type="button" className="btn" onClick={matchSelectionSize} title="Every piece takes the print size and frame of the last one clicked">
+        <button
+          type="button"
+          className="btn"
+          onClick={matchSelectionSize}
+          title="Every piece takes the print size and frame of the last one clicked"
+        >
           Match size and frame
         </button>
       </div>
-      <p className="note">{over ? `Centered over the ${over}` : 'Centered where they hang now'}; 145–155 cm is the usual eye level.</p>
+      <p className="note">
+        {over ? `Centered over the ${over}` : 'Centered where they hang now'}; 145–155 cm is the usual eye level.
+      </p>
     </Section>
   )
 }

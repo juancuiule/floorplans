@@ -6,7 +6,11 @@ import { isTabletop, placeAt, readIntersection, slidesOnFloor } from '../../src/
 import { restHeight, restPoints, settleMoved, surfaceBelow } from '../../src/decor/rest'
 import type { FurnitureItem, FurnitureType, LampItem } from '../../src/model/decor'
 
-const furniture = (type: FurnitureType, at: [number, number, number] = [0, -100, 0], id = `f-${type}`): FurnitureItem => ({
+const furniture = (
+  type: FurnitureType,
+  at: [number, number, number] = [0, -100, 0],
+  id = `f-${type}`,
+): FurnitureItem => ({
   kind: 'furniture',
   id,
   type,
@@ -16,7 +20,17 @@ const furniture = (type: FurnitureType, at: [number, number, number] = [0, -100,
   finish: { ...FURNITURE[type].finish },
   options: { ...FURNITURE[type].options },
 })
-const lamp = (at: [number, number, number]): LampItem => ({ kind: 'lamp', id: 'lamp', type: 'table', at, rotation: 0, on: true, brightness: 1, warmth: 2700, color: '#fff' })
+const lamp = (at: [number, number, number]): LampItem => ({
+  kind: 'lamp',
+  id: 'lamp',
+  type: 'table',
+  at,
+  rotation: 0,
+  on: true,
+  brightness: 1,
+  warmth: 2700,
+  color: '#fff',
+})
 
 const mat = new THREE.MeshStandardMaterial()
 /** A box standing on y = 0 with its top at `h`, centered on (x, z), as a scene would draw it (with outline edges). */
@@ -72,7 +86,11 @@ describe('surface placement on a fixture top', () => {
   it('keeps millimeters: a cooktop 6 mm proud and a balcony floor at 6 mm are not rounded to 1 cm', () => {
     const root = kitchen()
     expect(placeAt(furniture('mugs'), pointerHit(root, 1.74, 2.72)!)!.at![1]).toBe(0.906)
-    const floorHit = { point: new THREE.Vector3(7.8, 0.006, 1), normal: new THREE.Vector3(0, 1, 0), kind: 'up' as const }
+    const floorHit = {
+      point: new THREE.Vector3(7.8, 0.006, 1),
+      normal: new THREE.Vector3(0, 1, 0),
+      kind: 'up' as const,
+    }
     expect(placeAt(lamp([0, -100, 0]), floorHit)!.at![1]).toBe(0.006)
   })
 
@@ -150,10 +168,13 @@ describe('settleMoved', () => {
 })
 
 describe('tabletop pieces', () => {
-  it.each(['mugs', 'espressoMachine', 'standMixer', 'speakers', 'turntable', 'tv'] as const)('%s climbs onto furniture', (t) => {
-    expect(isTabletop(furniture(t))).toBe(true)
-    expect(slidesOnFloor(furniture(t))).toBe(false)
-  })
+  it.each(['mugs', 'espressoMachine', 'standMixer', 'speakers', 'turntable', 'tv'] as const)(
+    '%s climbs onto furniture',
+    (t) => {
+      expect(isTabletop(furniture(t))).toBe(true)
+      expect(slidesOnFloor(furniture(t))).toBe(false)
+    },
+  )
   it.each(['bookshelf', 'standingDesk', 'sideboard', 'rug'] as const)('%s slides along the floor', (t) => {
     expect(slidesOnFloor(furniture(t))).toBe(true)
   })

@@ -103,7 +103,11 @@ function Fittings({ f, m }: { f: ShowerFrame; m: THREE.Material }) {
           side tiles, curving out into the shower (−x, and away from the side wall). */}
       <mesh position={shelf.position} geometry={shelf.geometry} material={m} castShadow receiveShadow />
       {bottles.map(([r, h, color], i) => (
-        <mesh key={i} position={[BACK - 0.05 - i * 0.045, SHELF.top + h / 2, cornerZ + side * (0.045 + (i % 2) * 0.05)]} castShadow>
+        <mesh
+          key={i}
+          position={[BACK - 0.05 - i * 0.045, SHELF.top + h / 2, cornerZ + side * (0.045 + (i % 2) * 0.05)]}
+          castShadow
+        >
           <cylinderGeometry args={[r, r, h, 16]} />
           <meshStandardMaterial color={color} roughness={0.35} />
         </mesh>
@@ -118,12 +122,27 @@ function GlassDoor({ f, m }: { f: ShowerFrame; m: THREE.Material }) {
   const { x0: X0, back: BACK, z0: Z0, z1: Z1, top } = f
   return (
     <group>
-      <Box size={[0.008, H, Z1 - Z0]} position={[X0 + 0.01, top + H / 2, (Z0 + Z1) / 2]} material={sharedMaterial('glass')} castShadow={false} />
+      <Box
+        size={[0.008, H, Z1 - Z0]}
+        position={[X0 + 0.01, top + H / 2, (Z0 + Z1) / 2]}
+        material={sharedMaterial('glass')}
+        castShadow={false}
+      />
       {/* wall profile and the top stabilizer bar to the back wall */}
-      <Box size={[0.02, H, 0.015]} position={[X0 + 0.01, top + H / 2, Z0 + 0.0075]} material={m} edgeMaterial={edge()} />
+      <Box
+        size={[0.02, H, 0.015]}
+        position={[X0 + 0.01, top + H / 2, Z0 + 0.0075]}
+        material={m}
+        edgeMaterial={edge()}
+      />
       <Pipe a={[X0 + 0.01, top + H - 0.02, Z1 - 0.02]} b={[BACK, top + H - 0.02, Z1 - 0.02]} r={0.008} m={m} />
       {/* bar handle on the outside, touching the glass */}
-      <Box size={[0.04, 0.3, 0.015]} position={[X0 + 0.006 - 0.02, 1.05, Z1 - 0.07]} material={m} edgeMaterial={edge()} />
+      <Box
+        size={[0.04, 0.3, 0.015]}
+        position={[X0 + 0.006 - 0.02, 1.05, Z1 - 0.07]}
+        material={m}
+        edgeMaterial={edge()}
+      />
     </group>
   )
 }
@@ -148,12 +167,28 @@ function Curtain({ f, color, m }: { f: ShowerFrame; color: string; m: THREE.Mate
   return (
     <group>
       <Pipe a={[X0 + 0.03, railY, Z0]} b={[X0 + 0.03, railY, Z1]} r={0.01} m={m} />
-      <mesh geometry={geometry} material={material} position={[X0 + 0.03, railY - 0.02 - height, Z0 + width / 2]} castShadow receiveShadow />
+      <mesh
+        geometry={geometry}
+        material={material}
+        position={[X0 + 0.03, railY - 0.02 - height, Z0 + width / 2]}
+        castShadow
+        receiveShadow
+      />
     </group>
   )
 }
 
-function ScreenFor({ f, screen, curtainColor, m }: { f: ShowerFrame; screen: ShowerScreen; curtainColor: string; m: THREE.Material }) {
+function ScreenFor({
+  f,
+  screen,
+  curtainColor,
+  m,
+}: {
+  f: ShowerFrame
+  screen: ShowerScreen
+  curtainColor: string
+  m: THREE.Material
+}) {
   if (screen === 'glass') return <GlassDoor f={f} m={m} />
   if (screen === 'curtain') return <Curtain f={f} color={curtainColor} m={m} />
   return null

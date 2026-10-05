@@ -21,6 +21,8 @@ export interface EditState {
   guides: Guides | null
   /** Shift-drag rubber band over the canvas, in client pixels. */
   marquee: { x0: number; y0: number; x1: number; y1: number } | null
+  /** Paint brush: clicking a wall paints that side this color ('base' puts back the base color). Null: off. */
+  paintBrush: string | null
   set: (patch: Partial<Omit<EditState, 'set'>>) => void
 }
 
@@ -40,6 +42,7 @@ export const useEdit = create<EditState>((set) => ({
   handleHover: false,
   guides: null,
   marquee: null,
+  paintBrush: null,
   set: (patch) => set(patch),
 }))
 
@@ -71,7 +74,8 @@ export function screenAxes(): { right: [number, number]; away: [number, number] 
     fx = u.x
     fz = u.z
   }
-  const snap = (x: number, z: number): [number, number] => (Math.abs(x) >= Math.abs(z) ? [Math.sign(x) || 1, 0] : [0, Math.sign(z) || 1])
+  const snap = (x: number, z: number): [number, number] =>
+    Math.abs(x) >= Math.abs(z) ? [Math.sign(x) || 1, 0] : [0, Math.sign(z) || 1]
   const away = snap(fx, fz)
   const right = snap(-fz, fx)
   return { right, away }

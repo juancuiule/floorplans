@@ -3,7 +3,9 @@ import * as THREE from 'three'
 import type { FurnitureItem } from '../../../model/decor'
 import type { Vec3 } from '../../../model/types'
 import { seeded } from '../plantGeometry'
-import { B, Books, cushionGeometry, FingerHole, mat, Pillow, Rod, T } from './common'
+import { B, Books, FingerHole, Pillow, Rod, T } from './common'
+import { mat } from './furnitureMaterials'
+import { cushionGeometry } from './softGeometry'
 
 // ---------- ergonomic office chair ----------
 
@@ -139,11 +141,27 @@ export function OfficeChair({ item }: { item: FurnitureItem }) {
       {/* tilt mechanism with its paddle, seat pan and padded seat */}
       <B s={[0.22, 0.05, 0.26]} p={[0, seatH - 0.115, 0]} m={frame} />
       <B s={[0.1, 0.012, 0.025]} p={[0.16, seatH - 0.12, 0.08]} r={[0, -0.3, 0]} m={frame} edges={false} />
-      <mesh geometry={cushionGeometry(0.48, 0.03, 0.46, 0.08)} position={[0, seatH - 0.09, 0.01]} material={frame} castShadow />
-      <mesh geometry={cushionGeometry(0.5, 0.075, 0.48, 0.1)} position={[0, seatH - 0.075, 0.01]} material={cushion} castShadow receiveShadow />
+      <mesh
+        geometry={cushionGeometry(0.48, 0.03, 0.46, 0.08)}
+        position={[0, seatH - 0.09, 0.01]}
+        material={frame}
+        castShadow
+      />
+      <mesh
+        geometry={cushionGeometry(0.5, 0.075, 0.48, 0.1)}
+        position={[0, seatH - 0.075, 0.01]}
+        material={cushion}
+        castShadow
+        receiveShadow
+      />
       {/* spine from the mechanism up behind the back to the headrest */}
       <B s={[0.07, 0.03, 0.2]} p={[0, seatH - 0.105, -0.17]} m={frame} />
-      <B s={[0.06, spineTop - (seatH - 0.12), 0.03]} p={[0, (spineTop + seatH - 0.12) / 2, backZ - 0.045]} r={[tilt, 0, 0]} m={frame} />
+      <B
+        s={[0.06, spineTop - (seatH - 0.12), 0.03]}
+        p={[0, (spineTop + seatH - 0.12) / 2, backZ - 0.045]}
+        r={[tilt, 0, 0]}
+        m={frame}
+      />
       {/* mesh back in a molded frame, with a lumbar pad */}
       <group position={[0, backY + 0.28, backZ]} rotation={[tilt, 0, 0]}>
         <mesh geometry={back} material={mesh} castShadow />
@@ -161,7 +179,12 @@ export function OfficeChair({ item }: { item: FurnitureItem }) {
         <group key={sx}>
           <B s={[0.12, 0.025, 0.05]} p={[sx * 0.22, seatH - 0.105, -0.03]} m={frame} />
           <B s={[0.035, 0.29, 0.05]} p={[sx * 0.28, seatH + 0.03, -0.03]} m={frame} />
-          <mesh geometry={cushionGeometry(0.08, 0.03, 0.25, 0.035)} position={[sx * 0.28, seatH + 0.175, 0.0]} material={cushion} castShadow />
+          <mesh
+            geometry={cushionGeometry(0.08, 0.03, 0.25, 0.035)}
+            position={[sx * 0.28, seatH + 0.175, 0.0]}
+            material={cushion}
+            castShadow
+          />
         </group>
       ))}
     </group>
@@ -194,7 +217,10 @@ export function BistroChair({ item }: { item: FurnitureItem }) {
     const top = seatY - 0.03
     const out: THREE.BufferGeometry[] = []
     // Four splayed legs, each bent in under the seat ring.
-    const corners = variant === 'chair' ? [Math.PI * 0.25, -Math.PI * 0.25] : [Math.PI * 0.25, -Math.PI * 0.25, Math.PI * 0.75, -Math.PI * 0.75]
+    const corners =
+      variant === 'chair'
+        ? [Math.PI * 0.25, -Math.PI * 0.25]
+        : [Math.PI * 0.25, -Math.PI * 0.25, Math.PI * 0.75, -Math.PI * 0.75]
     for (const a of corners) {
       const s = Math.sin(a)
       const c = Math.cos(a)
@@ -300,7 +326,12 @@ export function WindowBench({ item }: { item: FurnitureItem }) {
       <B s={[w, T, d]} p={[0, kick + T / 2, 0]} m={body} />
       <B s={[w, boxH - kick, T]} p={[0, kick + (boxH - kick) / 2, -d / 2 + T / 2]} m={body} />
       {Array.from({ length: n + 1 }, (_, i) => (
-        <B key={i} s={[T, boxH - kick - 2 * T, d - T]} p={[-w / 2 + T / 2 + i * cw, kick + (boxH - kick) / 2, T / 2]} m={body} />
+        <B
+          key={i}
+          s={[T, boxH - kick - 2 * T, d - T]}
+          p={[-w / 2 + T / 2 + i * cw, kick + (boxH - kick) / 2, T / 2]}
+          m={body}
+        />
       ))}
       {Array.from({ length: n }, (_, i) => {
         const cx = -w / 2 + T / 2 + (i + 0.5) * cw
@@ -314,23 +345,54 @@ export function WindowBench({ item }: { item: FurnitureItem }) {
           )
         // Alternate books and a woven basket.
         return i % 2 === 0 ? (
-          <Books key={i} w={cw - T - 0.01} h={ch - 0.01} d={d - T - 0.02} seed={`${item.id}${i}`} p={[cx, kick + T, 0]} />
+          <Books
+            key={i}
+            w={cw - T - 0.01}
+            h={ch - 0.01}
+            d={d - T - 0.02}
+            seed={`${item.id}${i}`}
+            p={[cx, kick + T, 0]}
+          />
         ) : (
           <group key={i} position={[cx, kick + T, 0.02]}>
             <B s={[cw - T - 0.05, ch * 0.72, d - 0.1]} p={[0, (ch * 0.72) / 2, 0]} m={mat(BASKET, 'matte')} />
             {/* woven bands */}
             {[0.25, 0.5, 0.75].map((t) => (
-              <B key={t} s={[cw - T - 0.048, 0.008, d - 0.098]} p={[0, ch * 0.72 * t, 0]} m={mat('#9c7a4c', 'matte')} edges={false} />
+              <B
+                key={t}
+                s={[cw - T - 0.048, 0.008, d - 0.098]}
+                p={[0, ch * 0.72 * t, 0]}
+                m={mat('#9c7a4c', 'matte')}
+                edges={false}
+              />
             ))}
-            {r() > 0.3 && <B s={[cw * 0.5, 0.05, d * 0.5]} p={[0, ch * 0.72 + 0.01, 0]} r={[0.1, 0.3, 0.05]} m={mat('#e6e0d4', 'fabric')} />}
+            {r() > 0.3 && (
+              <B
+                s={[cw * 0.5, 0.05, d * 0.5]}
+                p={[0, ch * 0.72 + 0.01, 0]}
+                r={[0.1, 0.3, 0.05]}
+                m={mat('#e6e0d4', 'fabric')}
+              />
+            )}
           </group>
         )
       })}
       {cushion && (
         <group>
-          <mesh geometry={cushionGeometry(w - 0.01, 0.06, d - 0.02, 0.03)} position={[0, boxH, 0.005]} material={mat(item.finish.fabric, 'fabric')} castShadow receiveShadow />
+          <mesh
+            geometry={cushionGeometry(w - 0.01, 0.06, d - 0.02, 0.03)}
+            position={[0, boxH, 0.005]}
+            material={mat(item.finish.fabric, 'fabric')}
+            castShadow
+            receiveShadow
+          />
           {/* a throw pillow against the wall at one end */}
-          <Pillow s={[0.4, 0.38, 0.14]} p={[-w / 2 + 0.26, boxH + 0.06 + 0.18, -d / 2 + 0.09]} r={[-0.22, 0.1, 0.04]} m={mat('#e8e2d3', 'fabric')} />
+          <Pillow
+            s={[0.4, 0.38, 0.14]}
+            p={[-w / 2 + 0.26, boxH + 0.06 + 0.18, -d / 2 + 0.09]}
+            r={[-0.22, 0.1, 0.04]}
+            m={mat('#e8e2d3', 'fabric')}
+          />
         </group>
       )}
     </group>

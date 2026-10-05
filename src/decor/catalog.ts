@@ -55,7 +55,13 @@ export const PLANTS: Record<PlantSpecies, { label: string; note: string; mount: 
 }
 
 /** Default clay pot size for the small species; others keep their own pot. */
-export const DEFAULT_POT_SIZE: Partial<Record<PlantSpecies, PotSize>> = { succulent: 8, herbs: 12, aloe: 12, haworthia: 8, burro: 12 }
+export const DEFAULT_POT_SIZE: Partial<Record<PlantSpecies, PotSize>> = {
+  succulent: 8,
+  herbs: 12,
+  aloe: 12,
+  haworthia: 8,
+  burro: 12,
+}
 
 /** Species a collection draws from, with the clay pot sizes they come in. */
 export const COLLECTION_SPECIES: { species: PlantSpecies; sizes: number[] }[] = [
@@ -88,13 +94,25 @@ export const LAMPS: Record<LampType, { label: string; note: string; mount: Mount
   tripod: { label: 'Tripod lamp', note: 'Wood legs, drum shade', mount: 'surface', color: '#efe8dc', power: 5 },
   table: { label: 'Table lamp', note: 'Drum shade, for a side table', mount: 'surface', color: '#efe8dc', power: 2.5 },
   mushroom: { label: 'Mushroom lamp', note: 'Small dome, glows', mount: 'surface', color: '#e8d6b8', power: 2 },
-  flowerpot: { label: 'Flowerpot lamp', note: 'Two domes, 70s table lamp', mount: 'surface', color: '#d8b53c', power: 2 },
+  flowerpot: {
+    label: 'Flowerpot lamp',
+    note: 'Two domes, 70s table lamp',
+    mount: 'surface',
+    color: '#d8b53c',
+    power: 2,
+  },
   pendant: { label: 'Dome pendant', note: 'Hangs over a table', mount: 'ceiling', color: '#2b2a28', power: 6 },
   globe: { label: 'Globe pendant', note: 'Opal glass sphere', mount: 'ceiling', color: '#f5f2ea', power: 5 },
   lantern: { label: 'Paper lantern', note: 'Large rice-paper globe', mount: 'ceiling', color: '#f6ead8', power: 6 },
   sconce: { label: 'Wall sconce', note: 'Up-light on a wall', mount: 'wall', color: '#2b2a28', power: 2.5 },
   exit: { label: 'EXIT cube', note: 'Red glass cube on a wall', mount: 'wall', color: '#d42a1e', power: 1.2 },
-  exitCeiling: { label: 'EXIT ceiling sign', note: 'Milk-glass box, red letters', mount: 'ceiling', color: '#d42a1e', power: 1.5 },
+  exitCeiling: {
+    label: 'EXIT ceiling sign',
+    note: 'Milk-glass box, red letters',
+    mount: 'ceiling',
+    color: '#d42a1e',
+    power: 1.5,
+  },
   string: { label: 'String lights', note: 'Festoon along a wall', mount: 'wall', color: '#2b2a28', power: 0.5 },
 }
 

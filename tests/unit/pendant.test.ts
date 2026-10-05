@@ -29,11 +29,14 @@ const table = (at: [number, number, number], rotation = 0): FurnitureItem => ({
 })
 
 describe('pendant height', () => {
-  it.each(['pendant', 'globe', 'lantern'] as const)('a %s under the 2.60 ceiling keeps its bottom clear of heads by default', (t) => {
-    const l = lamp(t)
-    expect(pendantBottom(l, [l])).toBeGreaterThanOrEqual(HEAD_CLEARANCE - 0.005)
-    expect(pendantBottom(l, [l])).toBeGreaterThan(EYE + 0.3)
-  })
+  it.each(['pendant', 'globe', 'lantern'] as const)(
+    'a %s under the 2.60 ceiling keeps its bottom clear of heads by default',
+    (t) => {
+      const l = lamp(t)
+      expect(pendantBottom(l, [l])).toBeGreaterThanOrEqual(HEAD_CLEARANCE - 0.005)
+      expect(pendantBottom(l, [l])).toBeGreaterThan(EYE + 0.3)
+    },
+  )
 
   it('the owner’s paper lantern used to hang to 1.48 m; now its cord is short', () => {
     const l = lamp('lantern')

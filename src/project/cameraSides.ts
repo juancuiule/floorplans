@@ -26,7 +26,12 @@ export const sideOf = (cam: Pick<CameraDef, 'position'>, cz: number): -1 | 1 => 
  */
 export function sideNames(shell: Pick<Shell, 'rooms' | 'baseFloors'>): [string, string] {
   const bounds = shell.baseFloors.reduce<Rect>(
-    (u, f) => [Math.min(u[0], f.rect[0]), Math.min(u[1], f.rect[1]), Math.max(u[2], f.rect[2]), Math.max(u[3], f.rect[3])],
+    (u, f) => [
+      Math.min(u[0], f.rect[0]),
+      Math.min(u[1], f.rect[1]),
+      Math.max(u[2], f.rect[2]),
+      Math.max(u[3], f.rect[3]),
+    ],
     [Infinity, Infinity, -Infinity, -Infinity],
   )
   const [, z0, , z1] = bounds

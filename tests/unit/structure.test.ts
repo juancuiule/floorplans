@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { plan } from '../../src/project/plan'
 import { collisionsOf, snapToWalls } from '../../src/decor/placement'
 import { FURNITURE } from '../../src/decor/furnitureCatalog'
-import { serialize } from '../../src/decor/store'
+import { serialize } from '../../src/decor/layoutFile'
 import type { FurnitureItem, FurnitureType } from '../../src/model/decor'
 import { DEFAULT_FINISHES, normalizeFinishes, structureOf, withStructure } from '../../src/model/finishes'
 import { DEFAULT_STRUCTURE, normalizeStructure, toggleWall, type Structure } from '../../src/model/structure'
@@ -9,7 +10,14 @@ import type { Vec2 } from '../../src/model/types'
 import { passable, shellObstacles } from '../../src/plan/obstacles'
 import { walk, walkObstacles } from '../../src/plan/walk'
 import { shell } from '../../src/project'
-import { activeShell, activeWalls, ceilingFitting, currentStructure, lostWallOf, setStructure } from '../../src/project/structure'
+import {
+  activeShell,
+  activeWalls,
+  ceilingFitting,
+  currentStructure,
+  lostWallOf,
+  setStructure,
+} from '../../src/project/structure'
 
 const piece = (type: FurnitureType, at: [number, number, number], rotation = 0): FurnitureItem => ({
   kind: 'furniture',
@@ -28,24 +36,31 @@ afterEach(() => void setStructure(DEFAULT_STRUCTURE))
 
 describe('structure in the layout file', () => {
   it('reads missing or broken input as the flat as built', () => {
-    for (const raw of [undefined, null, 3, 'x', {}, { removedWalls: 'entry-main' }]) expect(normalizeStructure(raw)).toEqual(DEFAULT_STRUCTURE)
+    for (const raw of [undefined, null, 3, 'x', {}, { removedWalls: 'entry-main' }])
+      expect(normalizeStructure(raw, plan)).toEqual(DEFAULT_STRUCTURE)
   })
 
   it('keeps only removable partitions, in plan order, without duplicates', () => {
-    const s = normalizeStructure({ removedWalls: ['entry-main', 'facade', 'side-bath', 'bath-hall', 'entry-main', 'column-kitchen'], raiseEntryCeiling: true })
+    const s = normalizeStructure(
+      {
+        removedWalls: ['entry-main', 'facade', 'side-bath', 'bath-hall', 'entry-main', 'column-kitchen'],
+        raiseEntryCeiling: true,
+      },
+      plan,
+    )
     expect(s).toEqual({ removedWalls: ['bath-hall', 'entry-main'], raiseEntryCeiling: true })
   })
 
   it('toggles a wall out and back', () => {
-    const out = toggleWall(DEFAULT_STRUCTURE, 'entry-main')
+    const out = toggleWall(DEFAULT_STRUCTURE, 'entry-main', plan)
     expect(out.removedWalls).toEqual(['entry-main'])
-    expect(toggleWall(out, 'entry-main').removedWalls).toEqual([])
+    expect(toggleWall(out, 'entry-main', plan).removedWalls).toEqual([])
   })
 
   it('is left out of finishes (and the file) unless something differs', () => {
-    expect('structure' in normalizeFinishes({})).toBe(false)
-    expect('structure' in normalizeFinishes({ structure: { removedWalls: ['facade'] } })).toBe(false)
-    const f = normalizeFinishes({ structure: { removedWalls: ['entry-main'] } })
+    expect('structure' in normalizeFinishes({}, plan)).toBe(false)
+    expect('structure' in normalizeFinishes({ structure: { removedWalls: ['facade'] } }, plan)).toBe(false)
+    const f = normalizeFinishes({ structure: { removedWalls: ['entry-main'] } }, plan)
     expect(structureOf(f)).toEqual({ removedWalls: ['entry-main'], raiseEntryCeiling: false })
     expect(structureOf(DEFAULT_FINISHES)).toEqual(DEFAULT_STRUCTURE)
     // Back to as built: the key goes.
@@ -55,7 +70,7 @@ describe('structure in the layout file', () => {
     const saved = JSON.parse(serialize([], f))
     expect(saved.finishes.structure).toEqual({ removedWalls: ['entry-main'], raiseEntryCeiling: false })
     // Round trip.
-    expect(normalizeFinishes(saved.finishes)).toEqual(f)
+    expect(normalizeFinishes(saved.finishes, plan)).toEqual(f)
     // Other finishes without walls removed: no structure key in the file.
     expect(JSON.parse(serialize([], { ...DEFAULT_FINISHES, hexBlend: true })).finishes).not.toHaveProperty('structure')
   })
@@ -115,7 +130,11 @@ describe('activeShell', () => {
 
   it('fills the corner only when both neighbors are gone', () => {
     expect(activeShell(removed('shower-niche')).floorFills.map((f) => f.id)).toEqual(['shower-niche:0'])
-    expect(activeShell(removed('bath-niche', 'shower-niche')).floorFills.map((f) => f.id)).toEqual(['bath-niche:0', 'shower-niche:0', 'shower-niche:1'])
+    expect(activeShell(removed('bath-niche', 'shower-niche')).floorFills.map((f) => f.id)).toEqual([
+      'bath-niche:0',
+      'shower-niche:0',
+      'shower-niche:1',
+    ])
   })
 })
 
@@ -136,10 +155,14 @@ describe('the open layout’s structure', () => {
     expect(lostWallOf({ at: [4, 1.4, 0.01], host: 'side-bath' }, s)).toBeNull()
     expect(lostWallOf({ at: [4, 1.4, 0.01] }, s)).toBeNull()
     // A 50 cm print centered near the end of what stays hangs half off it.
-    expect(lostWallOf({ at: [2.2, 1.7, 0.76], host: 'entry-main', facing: 'x+', size: { w: 0.5 } }, s)).toBe('entry-main')
+    expect(lostWallOf({ at: [2.2, 1.7, 0.76], host: 'entry-main', facing: 'x+', size: { w: 0.5 } }, s)).toBe(
+      'entry-main',
+    )
     expect(lostWallOf({ at: [2.2, 1.7, 0.4], host: 'entry-main', facing: 'x+', size: { w: 0.5 } }, s)).toBeNull()
     // On the passage jamb (facing along the wall): its width runs across the wall.
-    expect(lostWallOf({ at: [2.14, 2.18, 0.8], host: 'entry-main', facing: 'z+', size: [0.09, 0.17, 0.38] }, s)).toBeNull()
+    expect(
+      lostWallOf({ at: [2.14, 2.18, 0.8], host: 'entry-main', facing: 'z+', size: [0.09, 0.17, 0.38] }, s),
+    ).toBeNull()
   })
 })
 

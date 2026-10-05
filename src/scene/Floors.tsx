@@ -29,7 +29,11 @@ export function Floors() {
   const edge = sharedEdgeMaterial()
   return (
     <group>
-      <Box {...rectBox(slab.rect, -slab.thickness - FLOOR_T, -FLOOR_T)} material={sharedMaterial(slab.material)} edgeMaterial={edge} />
+      <Box
+        {...rectBox(slab.rect, -slab.thickness - FLOOR_T, -FLOOR_T)}
+        material={sharedMaterial(slab.material)}
+        edgeMaterial={edge}
+      />
       {baseFloors.map((f) => (
         <FloorBox key={f.id} rect={f.rect} y0={-FLOOR_T} y1={0} material={f.material} />
       ))}
@@ -105,7 +109,15 @@ function HexBlend() {
   }, [mat])
   return (
     // Not a surface: clicks and placement go to the floor underneath.
-    <mesh ref={ref} visible={false} geometry={geometry} position={position} material={mat} receiveShadow raycast={noRaycast} />
+    <mesh
+      ref={ref}
+      visible={false}
+      geometry={geometry}
+      position={position}
+      material={mat}
+      receiveShadow
+      raycast={noRaycast}
+    />
   )
 }
 
@@ -138,6 +150,13 @@ function CeilingView({ ceiling: c }: { ceiling: Ceiling }) {
     if (ref.current) ref.current.visible = camera.position.y < c.height - 0.01
   })
   return (
-    <mesh ref={ref} geometry={geometry} position={position} rotation={[Math.PI / 2, 0, 0]} material={sharedMaterial(c.material)} receiveShadow />
+    <mesh
+      ref={ref}
+      geometry={geometry}
+      position={position}
+      rotation={[Math.PI / 2, 0, 0]}
+      material={sharedMaterial(c.material)}
+      receiveShadow
+    />
   )
 }

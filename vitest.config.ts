@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 // Unit tests only. E2E lives in tests/e2e and runs with `pnpm test:e2e` against a dev server.
-// Kept separate from vite.config.ts so the dev API plugin is not loaded here.
+// tests/unit/setup.ts opens the plan the tests are written for (examples/monoambiente).
 export default defineConfig({
   test: {
     include: ['tests/unit/**/*.test.ts'],

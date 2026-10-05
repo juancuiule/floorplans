@@ -1,0 +1,26 @@
+/* ---------- placement hint ---------- */
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(calc(-50% - (var(--panel-w) + var(--gutter)) / 2));
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgb(30 29 27 / 0.9);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+[data-panel-closed] .hint {
+  transform: translateX(-50%);
+}
+
+.hint kbd {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.18);
+  box-shadow: none;
+  color: #fff;
+}

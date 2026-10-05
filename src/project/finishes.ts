@@ -38,7 +38,12 @@ export const FLOORS: Record<FloorId, FloorFinish> = {
     def: {
       color: '#c3bfb8',
       roughness: 0.55,
-      pattern: { kind: 'hex', size: 0.2, grout: '#dcd8d0', tones: ['#d2cec7', '#c6c2bb', '#bab6af', '#aeaaa3', '#9d9993', '#86837e', '#6a6864'] },
+      pattern: {
+        kind: 'hex',
+        size: 0.2,
+        grout: '#dcd8d0',
+        tones: ['#d2cec7', '#c6c2bb', '#bab6af', '#aeaaa3', '#9d9993', '#86837e', '#6a6864'],
+      },
     },
   },
   hexCharcoal: {
@@ -46,7 +51,12 @@ export const FLOORS: Record<FloorId, FloorFinish> = {
     def: {
       color: '#4a4947',
       roughness: 0.5,
-      pattern: { kind: 'hex', size: 0.2, grout: '#b3aea6', tones: ['#3b3b3a', '#454443', '#2f2f2f', '#525150', '#5f5d5a', '#282828', '#6d6a66'] },
+      pattern: {
+        kind: 'hex',
+        size: 0.2,
+        grout: '#b3aea6',
+        tones: ['#3b3b3a', '#454443', '#2f2f2f', '#525150', '#5f5d5a', '#282828', '#6d6a66'],
+      },
     },
   },
   terracotta: {
@@ -54,12 +64,22 @@ export const FLOORS: Record<FloorId, FloorFinish> = {
     def: {
       color: '#c47f5f',
       roughness: 0.85,
-      pattern: { kind: 'tiles', width: 0.3, height: 0.3, grout: '#dccdbb', tones: ['#c47f5f', '#bb7353', '#cb8a69', '#b86f52', '#c8836a', '#be7a5c'] },
+      pattern: {
+        kind: 'tiles',
+        width: 0.3,
+        height: 0.3,
+        grout: '#dccdbb',
+        tones: ['#c47f5f', '#bb7353', '#cb8a69', '#b86f52', '#c8836a', '#be7a5c'],
+      },
     },
   },
   cementQuarter: {
     label: 'Cement tiles, blue',
-    def: { color: '#efe7d6', roughness: 0.6, pattern: { kind: 'quarter', size: 0.2, ink: '#4f6c93', grout: '#d9d1c2' } },
+    def: {
+      color: '#efe7d6',
+      roughness: 0.6,
+      pattern: { kind: 'quarter', size: 0.2, ink: '#4f6c93', grout: '#d9d1c2' },
+    },
   },
   porcelainGrey: {
     label: 'Grey porcelain',
@@ -140,9 +160,20 @@ export function bathTileDef(tile: Finishes['bathTile']): MaterialDef {
 }
 
 /** Material ids whose look comes from the finishes instead of src/project/materials.ts. */
-const ZONE_OF: Record<string, FloorZone> = { floorMain: 'main', floorHall: 'hall', bathFloor: 'bath', balconyFloor: 'balcony' }
+const ZONE_OF: Record<string, FloorZone> = {
+  floorMain: 'main',
+  floorHall: 'hall',
+  bathFloor: 'bath',
+  balconyFloor: 'balcony',
+}
 
-export const isFinishMaterial = (id: string) => id in ZONE_OF || id === 'plaster' || id === 'ceiling' || id === 'tile' || id.startsWith('accent:') || id.startsWith('paint:')
+export const isFinishMaterial = (id: string) =>
+  id in ZONE_OF ||
+  id === 'plaster' ||
+  id === 'ceiling' ||
+  id === 'tile' ||
+  id.startsWith('accent:') ||
+  id.startsWith('paint:')
 
 /**
  * The material definition for a finish-driven id under the given finishes, or
@@ -152,7 +183,11 @@ export const isFinishMaterial = (id: string) => id in ZONE_OF || id === 'plaster
  * `accent:<wall>` layers the accent color on the chosen wall (and are hidden on
  * the others), `tile` is the bathroom wall tile and the floor ids follow their zone.
  */
-export function finishDef(id: string, f: Finishes, base: Record<string, MaterialDef>): (MaterialDef & { hidden?: boolean }) | null {
+export function finishDef(
+  id: string,
+  f: Finishes,
+  base: Record<string, MaterialDef>,
+): (MaterialDef & { hidden?: boolean }) | null {
   const zone = ZONE_OF[id]
   if (zone) return FLOORS[f.floors[zone]].def
   if (id === 'plaster') return { ...base.plaster, color: f.wallPaint }

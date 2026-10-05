@@ -11,14 +11,12 @@ import { Box } from './Box'
 import { Merged } from './Merged'
 import { applyFade, faceDims, makeEdgeMaterial, makeMaterial } from './materials'
 import { requestShadowUpdate } from './shadows'
+import { cutWalls } from './cutWalls'
 
 /** Height of the wall stub left standing when dollhouse mode cuts a wall away. */
 export const STUB_HEIGHT = 0.3
 const XRAY_ALPHA = 0.14
 const FADE_SPEED = 9
-
-/** Walls currently cut away by dollhouse mode; decor hosted on them hides too. */
-export const cutWalls = new Set<string>()
 
 /** Longest step a fade takes in one frame: after an idle spell (on-demand rendering) dt can be seconds. */
 const MAX_DT = 1 / 30
@@ -33,7 +31,10 @@ export function Walls() {
     return byWall
   }, [walls])
   // The fade runs in useFrame; a mode switch has to wake the render loop.
-  useEffect(() => useView.subscribe((s, prev) => void ((s.mode !== prev.mode || s.walking !== prev.walking) && invalidate())), [])
+  useEffect(
+    () => useView.subscribe((s, prev) => void ((s.mode !== prev.mode || s.walking !== prev.walking) && invalidate())),
+    [],
+  )
   // Walls came or went: the shadow maps are stale.
   useEffect(() => {
     requestShadowUpdate()
@@ -43,7 +44,15 @@ export function Walls() {
     <group>
       {[...walls, ...soffits].map((w) => {
         const p = parts.get(w.id)
-        return <WallView key={w.id} wall={w} bulges={p?.bulges ?? NONE} accents={p?.accents ?? NONE} faces={faces.get(w.id) ?? NO_FACES} />
+        return (
+          <WallView
+            key={w.id}
+            wall={w}
+            bulges={p?.bulges ?? NONE}
+            accents={p?.accents ?? NONE}
+            faces={faces.get(w.id) ?? NO_FACES}
+          />
+        )
       })}
       <WallGhosts />
     </group>
@@ -63,7 +72,9 @@ function WallGhosts() {
     if (!ghosts.length) return null
     const pts: number[] = []
     const y = 0.008
-    for (const { rect: [x0, z0, x1, z1] } of ghosts) {
+    for (const {
+      rect: [x0, z0, x1, z1],
+    } of ghosts) {
       const c = [
         [x0, z0],
         [x1, z0],
@@ -73,7 +84,13 @@ function WallGhosts() {
       for (let i = 0; i < 4; i++) pts.push(c[i][0], y, c[i][1], c[(i + 1) % 4][0], y, c[(i + 1) % 4][1])
     }
     const geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3))
-    const material = new THREE.LineDashedMaterial({ color: '#8a8378', dashSize: 0.05, gapSize: 0.035, transparent: true, opacity: 0.75 })
+    const material = new THREE.LineDashedMaterial({
+      color: '#8a8378',
+      dashSize: 0.05,
+      gapSize: 0.035,
+      transparent: true,
+      opacity: 0.75,
+    })
     const obj = new THREE.LineSegments(geometry, material)
     obj.computeLineDistances()
     obj.raycast = () => {}
@@ -110,7 +127,17 @@ const NO_FACES: PaintFace[] = []
 /** Paint sits this far in front of the plaster: enough to win the depth test, too thin to see. */
 const PAINT_T = 0.001
 
-function WallView({ wall, bulges, accents, faces }: { wall: Wall; bulges: Bulge[]; accents: AccentPanel[]; faces: PaintFace[] }) {
+function WallView({
+  wall,
+  bulges,
+  accents,
+  faces,
+}: {
+  wall: Wall
+  bulges: Bulge[]
+  accents: AccentPanel[]
+  faces: PaintFace[]
+}) {
   const frame = useMemo(() => wallFrame(wall), [wall])
   const pieces = useMemo(() => wallPieces(wall, STUB_HEIGHT), [wall])
   const outward = useMemo(() => outwardNormal(wall, INSIDE), [wall])
@@ -157,7 +184,9 @@ function WallView({ wall, bulges, accents, faces }: { wall: Wall; bulges: Bulge[
       const full: Vec3 = [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]]
       for (const [y0, y1, isStub] of spans) {
         const size: [number, number, number] = [full[0], y1 - y0, full[2]]
-        const material = b.accent ? accentMats![isStub ? 'stub' : 'upper'] : makeMaterial(b.material, faceDims(size), [0, isStub ? 0 : y0 - b.min[1]])
+        const material = b.accent
+          ? accentMats![isStub ? 'stub' : 'upper']
+          : makeMaterial(b.material, faceDims(size), [0, isStub ? 0 : y0 - b.min[1]])
         ;(isStub ? stubSet : upperSet).add(material)
         bulgePieces.push({
           key: `${b.id}:${isStub ? 's' : 'u'}`,
@@ -180,7 +209,12 @@ function WallView({ wall, bulges, accents, faces }: { wall: Wall; bulges: Bulge[
         const a = Math.max(p.s0, face.s0)
         const b = Math.min(p.s1, face.s1)
         if (b - a < 0.005) return
-        paint.push({ key: `${face.id}:${i}`, size: [b - a, p.y1 - p.y0, PAINT_T], position: [(a + b) / 2, (p.y0 + p.y1) / 2, z], material: p.stub ? m.stub : m.upper })
+        paint.push({
+          key: `${face.id}:${i}`,
+          size: [b - a, p.y1 - p.y0, PAINT_T],
+          position: [(a + b) / 2, (p.y0 + p.y1) / 2, z],
+          material: p.stub ? m.stub : m.upper,
+        })
       })
     }
     return { stub, stubEdge, upper, upperEdge, get, stubSet, upperSet, bulgePieces, paint }
@@ -240,7 +274,8 @@ function WallView({ wall, bulges, accents, faces }: { wall: Wall; bulges: Bulge[
       a.shadows = shadows
       requestShadowUpdate()
       groupRef.current.traverse((o) => {
-        if ((o as THREE.Mesh).isMesh && !mats.stubSet.has((o as THREE.Mesh).material as THREE.Material)) o.castShadow = shadows
+        if ((o as THREE.Mesh).isMesh && !mats.stubSet.has((o as THREE.Mesh).material as THREE.Material))
+          o.castShadow = shadows
       })
     }
   })
@@ -290,7 +325,8 @@ interface OpeningProps {
 
 function OpeningView({ opening, wall, get, edge }: OpeningProps) {
   if (opening.kind === 'door' && opening.leaf) return <DoorView opening={opening} wall={wall} get={get} edge={edge} />
-  if (opening.kind === 'window' && opening.glazing) return <SlidingDoorView opening={opening} wall={wall} get={get} edge={edge} />
+  if (opening.kind === 'window' && opening.glazing)
+    return <SlidingDoorView opening={opening} wall={wall} get={get} edge={edge} />
   return null
 }
 
@@ -314,11 +350,31 @@ function DoorView({ opening: o, wall, get, edge }: OpeningProps) {
 
   return (
     <group>
-      <Box size={[FRAME, o.height, depth]} position={[s0 + FRAME / 2, o.height / 2, 0]} material={frameMat} edgeMaterial={edge} />
-      <Box size={[FRAME, o.height, depth]} position={[s1 - FRAME / 2, o.height / 2, 0]} material={frameMat} edgeMaterial={edge} />
-      <Box size={[o.width, FRAME, depth]} position={[(s0 + s1) / 2, o.height - FRAME / 2, 0]} material={frameMat} edgeMaterial={edge} />
+      <Box
+        size={[FRAME, o.height, depth]}
+        position={[s0 + FRAME / 2, o.height / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
+      <Box
+        size={[FRAME, o.height, depth]}
+        position={[s1 - FRAME / 2, o.height / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
+      <Box
+        size={[o.width, FRAME, depth]}
+        position={[(s0 + s1) / 2, o.height - FRAME / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
       <group position={[hingeS, 0, pivotZ]} rotation={[0, phi, 0]}>
-        <Box size={[leafW, leafH, leafT]} position={[(dir * leafW) / 2, 0.01 + leafH / 2, 0]} material={leafMat} edgeMaterial={edge} />
+        <Box
+          size={[leafW, leafH, leafT]}
+          position={[(dir * leafW) / 2, 0.01 + leafH / 2, 0]}
+          material={leafMat}
+          edgeMaterial={edge}
+        />
         {[1, -1].map((side) => (
           <Box
             key={side}
@@ -354,17 +410,62 @@ function SlidingDoorView({ opening: o, get, edge }: OpeningProps) {
   return (
     <group>
       {/* Outer frame */}
-      <Box size={[FRAME, o.height, outerD]} position={[s0 + FRAME / 2, sill + o.height / 2, 0]} material={frameMat} edgeMaterial={edge} />
-      <Box size={[FRAME, o.height, outerD]} position={[s1 - FRAME / 2, sill + o.height / 2, 0]} material={frameMat} edgeMaterial={edge} />
-      <Box size={[o.width, FRAME, outerD]} position={[(s0 + s1) / 2, sill + o.height - FRAME / 2, 0]} material={frameMat} edgeMaterial={edge} />
-      <Box size={[o.width, FRAME, outerD]} position={[(s0 + s1) / 2, sill + FRAME / 2, 0]} material={frameMat} edgeMaterial={edge} />
+      <Box
+        size={[FRAME, o.height, outerD]}
+        position={[s0 + FRAME / 2, sill + o.height / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
+      <Box
+        size={[FRAME, o.height, outerD]}
+        position={[s1 - FRAME / 2, sill + o.height / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
+      <Box
+        size={[o.width, FRAME, outerD]}
+        position={[(s0 + s1) / 2, sill + o.height - FRAME / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
+      <Box
+        size={[o.width, FRAME, outerD]}
+        position={[(s0 + s1) / 2, sill + FRAME / 2, 0]}
+        material={frameMat}
+        edgeMaterial={edge}
+      />
       {panels.map((p, i) => (
         <group key={i} position={[p.cx, sill + FRAME + panelH / 2, p.z]}>
-          <Box size={[bar, panelH, 0.035]} position={[-panelW / 2 + bar / 2, 0, 0]} material={frameMat} edgeMaterial={edge} />
-          <Box size={[bar, panelH, 0.035]} position={[panelW / 2 - bar / 2, 0, 0]} material={frameMat} edgeMaterial={edge} />
-          <Box size={[panelW, bar, 0.035]} position={[0, panelH / 2 - bar / 2, 0]} material={frameMat} edgeMaterial={edge} />
-          <Box size={[panelW, bar * 1.6, 0.035]} position={[0, -panelH / 2 + bar * 0.8, 0]} material={frameMat} edgeMaterial={edge} />
-          <Box size={[panelW - bar * 2, panelH - bar * 2.6, 0.006]} position={[0, bar * 0.3, 0]} material={glassMat} castShadow={false} />
+          <Box
+            size={[bar, panelH, 0.035]}
+            position={[-panelW / 2 + bar / 2, 0, 0]}
+            material={frameMat}
+            edgeMaterial={edge}
+          />
+          <Box
+            size={[bar, panelH, 0.035]}
+            position={[panelW / 2 - bar / 2, 0, 0]}
+            material={frameMat}
+            edgeMaterial={edge}
+          />
+          <Box
+            size={[panelW, bar, 0.035]}
+            position={[0, panelH / 2 - bar / 2, 0]}
+            material={frameMat}
+            edgeMaterial={edge}
+          />
+          <Box
+            size={[panelW, bar * 1.6, 0.035]}
+            position={[0, -panelH / 2 + bar * 0.8, 0]}
+            material={frameMat}
+            edgeMaterial={edge}
+          />
+          <Box
+            size={[panelW - bar * 2, panelH - bar * 2.6, 0.006]}
+            position={[0, bar * 0.3, 0]}
+            material={glassMat}
+            castShadow={false}
+          />
           {/* Pull handle on the meeting stile */}
           <Box
             size={[0.02, 0.22, 0.03]}

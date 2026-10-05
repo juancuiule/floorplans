@@ -8,8 +8,18 @@ import { BalconyBench, PlanterWall, RailTable } from './Balcony'
 import { EmbroideryHoop, GlassDivider, Mugs, RetroClock, WireBasket } from './Decor'
 import { LoftBed } from './Loft'
 import { BistroChair, OfficeChair, WindowBench } from './Seating'
-import { FloatingShelf, FruitBaskets, GridShelf, HangingRack, KitchenRail, PegGrid, StationClock, UpperCabinets } from './Wall'
-import { AcIndoor, AcOutdoor, Fridge, Tv, EspressoMachine, Speakers, StandMixer, Turntable } from './Devices'
+import {
+  FloatingShelf,
+  FruitBaskets,
+  GridShelf,
+  HangingRack,
+  KitchenRail,
+  PegGrid,
+  StationClock,
+  UpperCabinets,
+} from './Wall'
+import { AcIndoor, AcOutdoor, Fridge, EspressoMachine, Speakers, StandMixer, Turntable } from './Devices'
+import { Tv } from './Tv'
 
 const VIEWS: Record<FurnitureType, (p: { item: FurnitureItem }) => ReactNode> = {
   platformBed: PlatformBed,

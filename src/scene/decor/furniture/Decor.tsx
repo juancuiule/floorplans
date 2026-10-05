@@ -4,7 +4,9 @@ import * as THREE from 'three'
 import type { FurnitureItem } from '../../../model/decor'
 import { sharedEdgeMaterial } from '../../materials'
 import { seeded } from '../plantGeometry'
-import { B, mat, Rod } from './common'
+import { B, Rod } from './common'
+import { mat } from './furnitureMaterials'
+import { GLAZES, glazeMaterial, SPECKLED, WHITE_GLAZE } from './glaze'
 
 // ---------- glass room divider ----------
 
@@ -52,7 +54,14 @@ export function GlassDivider({ item }: { item: FurnitureItem }) {
     const map = dividerGlassTexture(kind)
     // About 2.5 cm per flute.
     map.repeat.set(pw / 0.8, 1)
-    return new THREE.MeshStandardMaterial({ map, transparent: true, roughness: kind === 'clear' ? 0.05 : 0.3, metalness: 0.05, side: THREE.DoubleSide, depthWrite: false })
+    return new THREE.MeshStandardMaterial({
+      map,
+      transparent: true,
+      roughness: kind === 'clear' ? 0.05 : 0.3,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    })
   }, [kind, pw])
   useEffect(() => () => (glass.map?.dispose(), glass.dispose()), [glass])
   const topY = h - s
@@ -137,7 +146,8 @@ function burlapTexture() {
 }
 
 let burlapMat: THREE.MeshStandardMaterial | null = null
-const burlapMaterial = () => (burlapMat ??= new THREE.MeshStandardMaterial({ map: burlapTexture(), roughness: 1, side: THREE.DoubleSide }))
+const burlapMaterial = () =>
+  (burlapMat ??= new THREE.MeshStandardMaterial({ map: burlapTexture(), roughness: 1, side: THREE.DoubleSide }))
 
 const LAUNDRY = ['#e8e4dc', '#8ea5c3', '#3d3f42', '#c98b6b', '#f1ede4']
 
@@ -163,7 +173,16 @@ export function WireBasket({ item }: { item: FurnitureItem }) {
       {/* vertical wires and rings */}
       {Array.from({ length: n }, (_, i) => {
         const a = (i / n) * Math.PI * 2
-        return <Rod key={i} a={[Math.sin(a) * R * 0.9, 0.0025, Math.cos(a) * R * 0.9]} b={[Math.sin(a) * R, h, Math.cos(a) * R]} radius={0.0022} m={wire} segments={4} />
+        return (
+          <Rod
+            key={i}
+            a={[Math.sin(a) * R * 0.9, 0.0025, Math.cos(a) * R * 0.9]}
+            b={[Math.sin(a) * R, h, Math.cos(a) * R]}
+            radius={0.0022}
+            m={wire}
+            segments={4}
+          />
+        )
       })}
       {[0.0025, h * 0.35, h * 0.68, h].map((y, k) => {
         const rr = R * (0.9 + 0.1 * (y / h))
@@ -175,7 +194,14 @@ export function WireBasket({ item }: { item: FurnitureItem }) {
       })}
       {/* base grid */}
       {[-1, 0, 1].map((k) => (
-        <Rod key={`g${k}`} a={[-R * 0.88, 0.0025, k * R * 0.45]} b={[R * 0.88, 0.0025, k * R * 0.45]} radius={0.0022} m={wire} segments={4} />
+        <Rod
+          key={`g${k}`}
+          a={[-R * 0.88, 0.0025, k * R * 0.45]}
+          b={[R * 0.88, 0.0025, k * R * 0.45]}
+          radius={0.0022}
+          m={wire}
+          segments={4}
+        />
       ))}
       {/* side handles */}
       {[-1, 1].map((sx) => (
@@ -219,45 +245,20 @@ export function WireBasket({ item }: { item: FurnitureItem }) {
 
 // ---------- ceramic mugs ----------
 
-/** Glazes: a speckled stoneware base color each. */
-export const GLAZES = ['#efe9dc', '#2f4d6b', '#c96f4a', '#e7d49a', '#7f9b86', '#d9a3a0']
-const WHITE_GLAZE = '#f3f1ec'
-const SPECKLED = '#e3d6bf'
-
-const glazeMaterials = new Map<string, THREE.MeshStandardMaterial>()
-
-/** Glossy stoneware with dark iron speckles (a small tiled canvas texture). */
-export function glazeMaterial(color: string, speckles = true): THREE.MeshStandardMaterial {
-  const key = `${color}|${speckles}`
-  let m = glazeMaterials.get(key)
-  if (m) return m
-  if (!speckles) {
-    m = new THREE.MeshStandardMaterial({ color, roughness: 0.25 })
-  } else {
-    const c = document.createElement('canvas')
-    c.width = c.height = 128
-    const g = c.getContext('2d')!
-    g.fillStyle = color
-    g.fillRect(0, 0, 128, 128)
-    const r = seeded(color)
-    for (let i = 0; i < 140; i++) {
-      g.fillStyle = `rgba(60,45,35,${0.25 + r() * 0.45})`
-      g.beginPath()
-      g.arc(r() * 128, r() * 128, 0.4 + r() * 1.1, 0, Math.PI * 2)
-      g.fill()
-    }
-    const t = new THREE.CanvasTexture(c)
-    t.colorSpace = THREE.SRGBColorSpace
-    t.wrapS = t.wrapT = THREE.RepeatWrapping
-    t.repeat.set(2, 1)
-    m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.3 })
-  }
-  glazeMaterials.set(key, m)
-  return m
-}
-
 /** One mug standing on y = 0, handle toward +x: tapered body, a darker rim ring inside, a loop handle. */
-export function Mug({ p, turn = 0, glaze, r = 0.041, h = 0.095 }: { p: [number, number, number]; turn?: number; glaze: THREE.Material; r?: number; h?: number }) {
+export function Mug({
+  p,
+  turn = 0,
+  glaze,
+  r = 0.041,
+  h = 0.095,
+}: {
+  p: [number, number, number]
+  turn?: number
+  glaze: THREE.Material
+  r?: number
+  h?: number
+}) {
   return (
     <group position={p} rotation={[0, turn, 0]}>
       <mesh position={[0, h / 2, 0]} material={glaze} castShadow receiveShadow>
@@ -367,7 +368,14 @@ export function RetroClock({ item }: { item: FurnitureItem }) {
           return s
         })()
       : roundedTriangle(w * 1.08, w * 0.16)
-    const body = new THREE.ExtrudeGeometry(shape, { depth: depth - 0.01, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 3, curveSegments: 24 })
+    const body = new THREE.ExtrudeGeometry(shape, {
+      depth: depth - 0.01,
+      bevelEnabled: true,
+      bevelThickness: 0.008,
+      bevelSize: 0.008,
+      bevelSegments: 3,
+      curveSegments: 24,
+    })
     return { body, edges: new THREE.EdgesGeometry(body, 40) }
   }, [round, w, depth])
   useEffect(() => () => (body.dispose(), edges.dispose()), [body, edges])
@@ -493,7 +501,14 @@ const MOTIFS: Record<string, string[]> = {
     '................',
   ],
 }
-const THREAD: Record<string, string> = { w: '#fbfaf6', y: '#f2b41c', o: '#fbe2a0', r: '#cf3a30', g: '#4d8a4a', t: '#c0714a' }
+const THREAD: Record<string, string> = {
+  w: '#fbfaf6',
+  y: '#f2b41c',
+  o: '#fbe2a0',
+  r: '#cf3a30',
+  g: '#4d8a4a',
+  t: '#c0714a',
+}
 
 const hoopTextures = new Map<string, THREE.CanvasTexture>()
 function stitchTexture(motif: string) {
@@ -551,7 +566,8 @@ export function EmbroideryHoop({ item }: { item: FurnitureItem }) {
   const wood = mat(item.finish.body)
   const brass = mat('#b8963e', 'metal')
   let fabric = hoopFabric.get(motif)
-  if (!fabric) hoopFabric.set(motif, (fabric = new THREE.MeshStandardMaterial({ map: stitchTexture(motif), roughness: 0.95 })))
+  if (!fabric)
+    hoopFabric.set(motif, (fabric = new THREE.MeshStandardMaterial({ map: stitchTexture(motif), roughness: 0.95 })))
   const R = w / 2
   return (
     <group position={[0, R, 0]}>

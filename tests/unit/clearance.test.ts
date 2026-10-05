@@ -5,7 +5,13 @@ import type { FurnitureItem, FurnitureType } from '../../src/model/decor'
 import { clearancesOf, levelOf } from '../../src/plan/clearance'
 import { axisLock, edgeLines, formatCm, snapPoint } from '../../src/plan/measure'
 
-const piece = (id: string, type: FurnitureType, at: [number, number, number], rotation = 0, size = FURNITURE[type].size): FurnitureItem => ({
+const piece = (
+  id: string,
+  type: FurnitureType,
+  at: [number, number, number],
+  rotation = 0,
+  size = FURNITURE[type].size,
+): FurnitureItem => ({
   kind: 'furniture',
   id,
   type,

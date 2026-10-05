@@ -5,9 +5,36 @@ import type { DecorItem, FurnitureItem, LampItem, PlantItem } from '../../src/mo
 import type { Vec3 } from '../../src/model/types'
 
 const finish = { body: '#c49c6c', metal: '#1d1d1d', fabric: '#e6e0d4' }
-const desk = (at: Vec3, rotation = 0, size: Vec3 = [1.4, 0.72, 0.7]): FurnitureItem => ({ kind: 'furniture', id: 'desk', type: 'standingDesk', at, rotation, size, finish, options: {} })
-const lamp = (at: Vec3, id = 'lamp'): LampItem => ({ kind: 'lamp', id, type: 'table', at, rotation: 0, on: true, brightness: 1, warmth: 2700, color: '#eee' })
-const plant = (at: Vec3, id = 'plant'): PlantItem => ({ kind: 'plant', id, species: 'succulent', pot: 'clay', at, rotation: 0, scale: 1 })
+const desk = (at: Vec3, rotation = 0, size: Vec3 = [1.4, 0.72, 0.7]): FurnitureItem => ({
+  kind: 'furniture',
+  id: 'desk',
+  type: 'standingDesk',
+  at,
+  rotation,
+  size,
+  finish,
+  options: {},
+})
+const lamp = (at: Vec3, id = 'lamp'): LampItem => ({
+  kind: 'lamp',
+  id,
+  type: 'table',
+  at,
+  rotation: 0,
+  on: true,
+  brightness: 1,
+  warmth: 2700,
+  color: '#eee',
+})
+const plant = (at: Vec3, id = 'plant'): PlantItem => ({
+  kind: 'plant',
+  id,
+  species: 'succulent',
+  pot: 'clay',
+  at,
+  rotation: 0,
+  scale: 1,
+})
 const byId = (items: DecorItem[]) => Object.fromEntries(items.map((i) => [i.id, i]))
 
 describe('what rests on what', () => {
@@ -19,7 +46,18 @@ describe('what rests on what', () => {
   })
 
   it('reads wall shelves in their own frame (out from the wall)', () => {
-    const shelf: FurnitureItem = { kind: 'furniture', id: 'shelf', type: 'floatingShelf', at: [3, 1.2, 0], rotation: 0, facing: 'z+', host: 'side-bath', size: [0.9, 0.035, 0.22], finish, options: {} }
+    const shelf: FurnitureItem = {
+      kind: 'furniture',
+      id: 'shelf',
+      type: 'floatingShelf',
+      at: [3, 1.2, 0],
+      rotation: 0,
+      facing: 'z+',
+      host: 'side-bath',
+      size: [0.9, 0.035, 0.22],
+      finish,
+      options: {},
+    }
     expect(supportOf(plant([3.2, 1.235, 0.1]), [shelf])?.id).toBe('shelf')
     expect(supportOf(plant([3.2, 1.235, -0.1]), [shelf])).toBeNull()
   })
@@ -55,8 +93,26 @@ describe('carrying', () => {
   })
 
   it('carries a stack: a plant on a turntable on a sideboard', () => {
-    const sideboard: FurnitureItem = { kind: 'furniture', id: 'sb', type: 'sideboard', at: [4, 0, 2.8], rotation: 180, size: [1.6, 0.5, 0.42], finish, options: {} }
-    const deck: FurnitureItem = { kind: 'furniture', id: 'tt', type: 'turntable', at: [4.2, 0.5, 2.8], rotation: 180, size: [0.45, 0.157, 0.352], finish, options: {} }
+    const sideboard: FurnitureItem = {
+      kind: 'furniture',
+      id: 'sb',
+      type: 'sideboard',
+      at: [4, 0, 2.8],
+      rotation: 180,
+      size: [1.6, 0.5, 0.42],
+      finish,
+      options: {},
+    }
+    const deck: FurnitureItem = {
+      kind: 'furniture',
+      id: 'tt',
+      type: 'turntable',
+      at: [4.2, 0.5, 2.8],
+      rotation: 180,
+      size: [0.45, 0.157, 0.352],
+      finish,
+      options: {},
+    }
     const p = plant([4.25, 0.657, 2.8])
     const out = byId(carry([sideboard, deck, p], [{ ...sideboard, at: [5, 0, 2.8] }, deck, p]))
     expect(out.tt.at).toEqual([5.2, 0.5, 2.8])

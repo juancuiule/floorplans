@@ -2,6 +2,28 @@
 
 Everything the app does, as a reference. For setting it up with your own apartment, see [your-own-floorplan.md](your-own-floorplan.md).
 
+## Spaces and plans
+
+- **Home** (`/`): make a space, or reopen one this browser has opened before.
+- **A space** (`/?space=<id>`): its plans, with *Open in 3D*, *Edit floor plan* (for plans drawn in the editor) and *Delete*; *Draw a floor plan*; or start from an example (furnished, without its artwork). Rename the space by editing its title; *Copy this space's link* copies its key. There are no accounts: anyone with the link can edit. *Delete this space*, at the bottom, deletes it with all its plans, layouts and artwork once you type its name; there is no undo.
+- On the home page, *Remove from this list* only hides a space from this browser's list; the space itself is kept.
+- **Artwork** belongs to the space: every plan in it shares the library, other spaces never see it. The catalog of furniture, plants and lights is the same for everyone.
+- In the 3D app, the plan's name (top left) leads back to the space.
+
+## Floor plan editor
+
+It looks and works like the 3D editor: tools in the toolbar (each with a key), settings in the panel, a hint at the bottom.
+
+- **Reference image** (panel): add a picture of the floor plan (a listing's plan, a scan, a photo taken square on). *Set scale*: click both ends of a length you know on it and type that length; *Move* drags it into place; set its opacity, or hide it. It is kept with the plan, in the space's references (not its artwork).
+- **Room** (`R`): click each corner; every new edge runs straight across or up the plan. Click the first corner, double-click or press `Enter` to close it; `Backspace` takes a corner back, `Esc` drops it. Or drag to draw a rectangle in one go. Corners snap to other rooms' corners so rooms meet exactly and share their wall. Each room has a kind (living, bedroom, kitchen, bathroom, hall, balcony) that picks its floor zone; balconies get railings instead of walls.
+- **Walls** follow the rooms: 20 cm outside, 10 cm between rooms (removable later in the Room tab).
+- **Door** (`D`) · **Window** (`W`) · **Glass door** (`G`) · **Opening** (`O`): click a wall; drag it along the wall, set its width in the panel.
+- **Fitting** (`F`): toilet, basin, shower, counter, sink or cooktop; click to place, `R` to turn.
+- **Select** (`V`): drag a room to move it (its doors, windows and fittings come along); drag a corner to move it (its neighbors follow, so corners stay square) or an edge's dot to push or pull that wall; drag the grid to pan, scroll to zoom, *Fit* to frame. `Delete` removes the selection, `Cmd/Ctrl+Z` undoes, `Shift+Cmd/Ctrl+Z` redoes.
+- The panel names the plan, picks the city (for the sun) and the ceiling height, and lists problems before saving (overlapping rooms, no front door).
+
+![Tracing a floor plan](images/floorplan-editor.jpg)
+
 ## Views
 
 - **Dollhouse** cuts away the exterior walls facing the camera down to a 30 cm stub.
@@ -22,10 +44,10 @@ Everything the app does, as a reference. For setting it up with your own apartme
 
 ## Layouts and finishes
 
-- **Layouts:** the menu at the top of the panel lists every saved arrangement: *Current* is `data/decor.json`, named ones are `data/decor.<slug>.json` (each file keeps its display name, items and finishes). Switch, save the current one as a new layout, rename or delete (with confirmation). Switching updates `?decor=` without a reload and starts a fresh undo history. **A/B** (or `B`) flips between the open layout and the previous one, or the one picked with the compare button in the menu. Files starting with `e2e` or `test` are left out of the list.
+- **Layouts:** the menu at the top of the panel lists every saved arrangement: *Current* is the plan's `layouts/<plan>/decor.json` in its space, named ones are `decor.<slug>.json` beside it (each file keeps its display name, items and finishes). Switch, save the current one as a new layout, rename or delete (with confirmation). Switching updates `?decor=` without a reload and starts a fresh undo history. **A/B** (or `B`) flips between the open layout and the previous one, or the one picked with the compare button in the menu. Files starting with `e2e` or `test` are left out of the list.
 - **Room tab (finishes):** floors for the main room, the hall + kitchen zone, the bathroom and the balcony (light or natural oak, walnut, oak herringbone, polished concrete, grey or charcoal hexagons, terracotta, blue/cream quarter-circle cement tiles), with an option to scatter the hall's hexagons into the main room past the passage. Wall paint for the whole apartment, an optional accent wall in the main room (bath side, kitchen side, entry wall) and the bathroom wall tile layout and color. Finishes are saved in the layout file (`finishes`, only when they differ from the original look) and apply in place: materials and textures change, meshes and draw calls do not. `Cmd/Ctrl+Z` undoes a finish or a wall taken out like any other edit (a color picker drag is one step).
 - **What if without this wall** (Room tab → *Walls*): a small plan of the flat where the four interior partitions can be clicked out and back (bathroom ↔ hall, bathroom ↔ niche, shower ↔ niche, hall ↔ main room), with the same switches in a list. The entry wall, the party walls, the facade, the columns and the beam are structural or exterior: they show locked. A removed partition takes what it carried with it (door leaf and frame, bathroom tiles, accent paint, the passage header); the hall ↔ main room wall keeps its first 80 cm, the shower's back (plumbing) wall. The 2.40 dropped ceiling over the entry zone stays by default (it hides services), closed by a bulkhead where the wall stood; **Raise the entry ceiling to 2.60** is a separate option that moves the downlights up too. The floor under a removed wall is finished like the room on each side up to the old centerline, and an optional dashed outline marks where the wall was. Walk mode, wall snapping, overlap and clearance checks, the measure tool and shadows all follow the removed walls. Decor hung on a removed wall stays where it was, marked *Wall removed* in the room list and the inspector, until you move it. The choice is saved per layout in `finishes.structure` (`{ "removedWalls": ["entry-main"], "raiseEntryCeiling": false }`, only written when something differs), so A/B compares the flat with and without a wall. `src/project/structure.ts` builds the active shell; code that reads walls goes through `activeWalls()` / `activeShell()`.
-- Named layouts are versioned like `data/decor.json`. Only scratch files used by tests are git-ignored (`e2e*`, `test*`, `snap`, `furn`, `edit`, `objects`, `devices`).
+- Named layouts are files like the main one. In the example workspaces, only scratch files used by tests are git-ignored (`e2e*`, `test*` and a few older names).
 
 ## Keyboard
 

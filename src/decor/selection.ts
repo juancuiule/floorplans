@@ -1,6 +1,15 @@
 import type { ArtworkItem, DecorItem } from '../model/decor'
 import type { Vec3 } from '../model/types'
-import { align, distribute, hangGallery, matchSize, selectionFrame, type AlignMode, type GalleryOpts, type Patches } from './arrange'
+import {
+  align,
+  distribute,
+  hangGallery,
+  matchSize,
+  selectionFrame,
+  type AlignMode,
+  type GalleryOpts,
+  type Patches,
+} from './arrange'
 import { screenAxes } from './edit'
 import { backedBox, boxIn, isWallItem, unionBox } from './extent'
 import { alongWall } from './placement'
@@ -10,7 +19,8 @@ import { useDecor } from './store'
 // Commands on the current selection, shared by the edit bar, the inspector and
 // the keyboard. Each one is a single undo step.
 
-export const selectedItems = (s = useDecor.getState()): DecorItem[] => s.items.filter((i) => s.selectedIds.includes(i.id))
+export const selectedItems = (s = useDecor.getState()): DecorItem[] =>
+  s.items.filter((i) => s.selectedIds.includes(i.id))
 
 /** The frame to arrange the selection in (null: mixed walls and floor, or nothing selected). */
 export function arrangeFrame(items = selectedItems()) {
@@ -44,7 +54,9 @@ export function distributeSelection(axis: 'u' | 'v') {
 /** Every artwork in the selection takes the size and frame of the primary one. */
 export function matchSelectionSize() {
   const s = useDecor.getState()
-  const source = s.items.find((i) => i.id === s.selectedId && i.kind === 'artwork') ?? selectedItems(s).find((i) => i.kind === 'artwork')
+  const source =
+    s.items.find((i) => i.id === s.selectedId && i.kind === 'artwork') ??
+    selectedItems(s).find((i) => i.kind === 'artwork')
   if (source) s.applyPatches(matchSize(selectedItems(s), source as ArtworkItem))
 }
 
@@ -84,7 +96,14 @@ export function nudgeDelta(item: DecorItem, key: string, d: number): Vec3 | null
   }
   if (!key.startsWith('Arrow')) return null
   const { right, away } = screenAxes()
-  const v = key === 'ArrowRight' ? right : key === 'ArrowLeft' ? [-right[0], -right[1]] : key === 'ArrowUp' ? away : [-away[0], -away[1]]
+  const v =
+    key === 'ArrowRight'
+      ? right
+      : key === 'ArrowLeft'
+        ? [-right[0], -right[1]]
+        : key === 'ArrowUp'
+          ? away
+          : [-away[0], -away[1]]
   return [v[0] * d, 0, v[1] * d]
 }
 

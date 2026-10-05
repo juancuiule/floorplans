@@ -10,7 +10,8 @@ const TRAILING = new Set<PlantSpecies>(['pothos', 'burro', 'collection', 'window
 const POT_STYLES = POTS.map((p) => p.id) as PotStyle[]
 
 const vertexCount = (m: PlantModel) => m.parts.reduce((n, p) => n + p.geometry.getAttribute('position').count, 0)
-const positions = (m: PlantModel) => m.parts.map((p) => `${p.mat}:${Array.from(p.geometry.getAttribute('position').array as Float32Array).join(',')}`)
+const positions = (m: PlantModel) =>
+  m.parts.map((p) => `${p.mat}:${Array.from(p.geometry.getAttribute('position').array as Float32Array).join(',')}`)
 
 function expectSane(m: PlantModel) {
   expect(m.parts.length).toBeGreaterThan(0)
@@ -25,7 +26,8 @@ function expectSane(m: PlantModel) {
     expect(pos.count, p.mat).toBeGreaterThan(0)
     expect(p.geometry.getAttribute('normal'), p.mat).toBeDefined()
     const arr = pos.array as Float32Array
-    for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) throw new Error(`${p.mat}: non-finite position at ${i}`)
+    for (let i = 0; i < arr.length; i++)
+      if (!Number.isFinite(arr[i])) throw new Error(`${p.mat}: non-finite position at ${i}`)
   }
   const box = new THREE.Box3()
   for (const p of m.parts) {
@@ -77,7 +79,9 @@ describe('buildPlant', () => {
   it('varies with the seed', () => {
     // Species with random leaf layouts.
     for (const sp of ['monstera', 'fern', 'olive', 'collection'] as const) {
-      expect(positions(buildPlant(sp, PLANTS[sp].pot, 'one')), sp).not.toEqual(positions(buildPlant(sp, PLANTS[sp].pot, 'two')))
+      expect(positions(buildPlant(sp, PLANTS[sp].pot, 'one')), sp).not.toEqual(
+        positions(buildPlant(sp, PLANTS[sp].pot, 'two')),
+      )
     }
   })
 
@@ -95,7 +99,11 @@ describe('buildPlant', () => {
   })
 
   it('a collection survives edge-case counts', () => {
-    for (const count of [1, 2, 30]) expect(() => expectSane(buildPlant('collection', 'clay', 's', { count, spread: 0.9 })), String(count)).not.toThrow()
+    for (const count of [1, 2, 30])
+      expect(
+        () => expectSane(buildPlant('collection', 'clay', 's', { count, spread: 0.9 })),
+        String(count),
+      ).not.toThrow()
   })
 
   it('a window box is a box planter with trailing plants', () => {

@@ -1,6 +1,17 @@
 import type { ArtworkItem, DecorItem } from '../model/decor'
 import type { Vec3 } from '../model/types'
-import { boxIn, frameDelta, isWallItem, onPlane, translated, unionBox, wallDepth, wallFrameOf, type Box, type Frame } from './extent'
+import {
+  boxIn,
+  frameDelta,
+  isWallItem,
+  onPlane,
+  translated,
+  unionBox,
+  wallDepth,
+  wallFrameOf,
+  type Box,
+  type Frame,
+} from './extent'
 import { alongWall, mountOf } from './placement'
 
 // Moving, aligning and arranging several items at once. Pure: every function
@@ -15,7 +26,10 @@ export type AlignMode = 'left' | 'hcenter' | 'right' | 'top' | 'vmiddle' | 'bott
  * way), or the floor plan seen from the camera (`right`/`away`: plan axes).
  * Null for a mix of walls and floor.
  */
-export function selectionFrame(items: DecorItem[], axes: { right: [number, number]; away: [number, number] } = { right: [1, 0], away: [0, -1] }): Frame | null {
+export function selectionFrame(
+  items: DecorItem[],
+  axes: { right: [number, number]; away: [number, number] } = { right: [1, 0], away: [0, -1] },
+): Frame | null {
   if (!items.length) return null
   if (items.every(isWallItem)) {
     const f = wallFrameOf(items[0])
@@ -25,7 +39,9 @@ export function selectionFrame(items: DecorItem[], axes: { right: [number, numbe
   return { kind: 'floor', u: axes.right, v: axes.away }
 }
 
-const moveBy = (item: DecorItem, frame: Frame, du: number, dv: number): Partial<DecorItem> => ({ at: translated(item.at, frameDelta(frame, du, dv)) })
+const moveBy = (item: DecorItem, frame: Frame, du: number, dv: number): Partial<DecorItem> => ({
+  at: translated(item.at, frameDelta(frame, du, dv)),
+})
 
 /**
  * What moves as one: each whole group in the selection, when there are at least
@@ -135,7 +151,10 @@ export function hangGallery(items: DecorItem[], frame: Frame, opts: GalleryOpts)
   const cu = opts.centerU ?? (all.u0 + all.u1) / 2
   const w = (b: Box) => b.u1 - b.u0
   const h = (b: Box) => b.v1 - b.v0
-  const cols = opts.layout === 'row' ? entries.length : Math.max(1, opts.cols ?? (entries.length <= 3 ? entries.length : Math.ceil(Math.sqrt(entries.length))))
+  const cols =
+    opts.layout === 'row'
+      ? entries.length
+      : Math.max(1, opts.cols ?? (entries.length <= 3 ? entries.length : Math.ceil(Math.sqrt(entries.length))))
   // Reading order: rows are pieces whose centers are within 15 cm of height.
   const cv = (b: Box) => (b.v0 + b.v1) / 2
   const cU = (b: Box) => (b.u0 + b.u1) / 2
@@ -240,5 +259,12 @@ export function copyOffset(item: DecorItem, step = 0.1): Vec3 {
 
 /** Keeps a wall piece on the same wall plane as `ref` (used when pasting a set onto a wall). */
 export function sameWall(a: DecorItem, b: DecorItem): boolean {
-  return isWallItem(a) && isWallItem(b) && 'facing' in a && 'facing' in b && a.facing === b.facing && Math.abs(wallDepth(a) - wallDepth(b)) < 0.06
+  return (
+    isWallItem(a) &&
+    isWallItem(b) &&
+    'facing' in a &&
+    'facing' in b &&
+    a.facing === b.facing &&
+    Math.abs(wallDepth(a) - wallDepth(b)) < 0.06
+  )
 }

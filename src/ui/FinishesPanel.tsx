@@ -1,5 +1,12 @@
 import { useDecor } from '../decor/store'
-import { SHOWER_FITTINGS, SHOWER_SCREENS, TILE_LAYOUTS, ZONE_FLOORS, type FloorId, type FloorZone } from '../model/finishes'
+import {
+  SHOWER_FITTINGS,
+  SHOWER_SCREENS,
+  TILE_LAYOUTS,
+  ZONE_FLOORS,
+  type FloorId,
+  type FloorZone,
+} from '../model/finishes'
 import { bathTileDef, FLOORS, TILE_COLORS, TILE_LAYOUT_LABELS, ZONE_LABELS } from '../project/finishes'
 import { patternThumb } from '../scene/patterns'
 import { Chips, Field, Section, Swatches } from './controls'
@@ -71,23 +78,46 @@ export function FinishesPanel() {
 
       <Section title="Bathroom tiles">
         <Field label="Layout">
-          <TilePicker value={f.bathTile.layout} color={f.bathTile.color} onChange={(layout) => set({ bathTile: { ...f.bathTile, layout } })} />
+          <TilePicker
+            value={f.bathTile.layout}
+            color={f.bathTile.color}
+            onChange={(layout) => set({ bathTile: { ...f.bathTile, layout } })}
+          />
         </Field>
         <Field label="Color" value={TILE_COLORS.find((p) => p.color === f.bathTile.color)?.label ?? 'Custom'}>
-          <Swatches value={f.bathTile.color} colors={TILE_COLORS} onChange={(color) => set({ bathTile: { ...f.bathTile, color } })} />
+          <Swatches
+            value={f.bathTile.color}
+            colors={TILE_COLORS}
+            onChange={(color) => set({ bathTile: { ...f.bathTile, color } })}
+          />
         </Field>
       </Section>
 
       <Section title="Shower">
         <Field label="Screen">
-          <Chips value={f.shower.screen} options={SHOWER_SCREENS.map((id) => ({ id, label: SHOWER_LABELS[id] }))} onChange={(screen) => set({ shower: { ...f.shower, screen } })} />
+          <Chips
+            value={f.shower.screen}
+            options={SHOWER_SCREENS.map((id) => ({ id, label: SHOWER_LABELS[id] }))}
+            onChange={(screen) => set({ shower: { ...f.shower, screen } })}
+          />
         </Field>
         <Field label="Fittings">
-          <Chips value={f.shower.fittings} options={SHOWER_FITTINGS.map((id) => ({ id, label: FITTINGS_LABELS[id] }))} onChange={(fittings) => set({ shower: { ...f.shower, fittings } })} />
+          <Chips
+            value={f.shower.fittings}
+            options={SHOWER_FITTINGS.map((id) => ({ id, label: FITTINGS_LABELS[id] }))}
+            onChange={(fittings) => set({ shower: { ...f.shower, fittings } })}
+          />
         </Field>
         {f.shower.screen === 'curtain' && (
-          <Field label="Curtain" value={CURTAIN_COLORS.find((p) => p.color === f.shower.curtainColor)?.label ?? 'Custom'}>
-            <Swatches value={f.shower.curtainColor} colors={CURTAIN_COLORS} onChange={(curtainColor) => set({ shower: { ...f.shower, curtainColor } })} />
+          <Field
+            label="Curtain"
+            value={CURTAIN_COLORS.find((p) => p.color === f.shower.curtainColor)?.label ?? 'Custom'}
+          >
+            <Swatches
+              value={f.shower.curtainColor}
+              colors={CURTAIN_COLORS}
+              onChange={(curtainColor) => set({ shower: { ...f.shower, curtainColor } })}
+            />
           </Field>
         )}
       </Section>
@@ -113,7 +143,14 @@ function SampleGrid<T extends string>({
       className="samples"
       role="radiogroup"
       aria-label={label}
-      onKeyDown={(e) => onRadioKeys(e, options.map((o) => o.id), index, onChange)}
+      onKeyDown={(e) =>
+        onRadioKeys(
+          e,
+          options.map((o) => o.id),
+          index,
+          onChange,
+        )
+      }
     >
       {options.map((o, i) => (
         <button
@@ -126,7 +163,10 @@ function SampleGrid<T extends string>({
           data-finish={o.id}
           onClick={() => onChange(o.id)}
         >
-          <span className="sample-img" style={{ backgroundColor: o.color, backgroundImage: o.thumb ? `url(${o.thumb})` : undefined }} />
+          <span
+            className="sample-img"
+            style={{ backgroundColor: o.color, backgroundImage: o.thumb ? `url(${o.thumb})` : undefined }}
+          />
           <span className="sample-label">{o.label}</span>
         </button>
       ))}
@@ -135,11 +175,24 @@ function SampleGrid<T extends string>({
 }
 
 function FloorPicker({ zone, value, onChange }: { zone: FloorZone; value: FloorId; onChange: (id: FloorId) => void }) {
-  const options = ZONE_FLOORS[zone].map((id) => ({ id, label: FLOORS[id].label, thumb: patternThumb(FLOORS[id].def), color: FLOORS[id].def.color }))
+  const options = ZONE_FLOORS[zone].map((id) => ({
+    id,
+    label: FLOORS[id].label,
+    thumb: patternThumb(FLOORS[id].def),
+    color: FLOORS[id].def.color,
+  }))
   return <SampleGrid label={`${ZONE_LABELS[zone]} floor`} value={value} options={options} onChange={onChange} />
 }
 
-function TilePicker({ value, color, onChange }: { value: (typeof TILE_LAYOUTS)[number]; color: string; onChange: (v: (typeof TILE_LAYOUTS)[number]) => void }) {
+function TilePicker({
+  value,
+  color,
+  onChange,
+}: {
+  value: (typeof TILE_LAYOUTS)[number]
+  color: string
+  onChange: (v: (typeof TILE_LAYOUTS)[number]) => void
+}) {
   const options = TILE_LAYOUTS.map((id) => {
     const def = bathTileDef({ layout: id, color })
     return { id, label: TILE_LAYOUT_LABELS[id], thumb: patternThumb(def, 112, 0.7), color }

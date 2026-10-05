@@ -1,7 +1,16 @@
 // @vitest-environment node
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { alongWall, ceilingAt, facingOf, facingRotation, mountOf, placeAt, snapToWalls, type SurfaceHit } from '../../src/decor/placement'
+import {
+  alongWall,
+  ceilingAt,
+  facingOf,
+  facingRotation,
+  mountOf,
+  placeAt,
+  snapToWalls,
+  type SurfaceHit,
+} from '../../src/decor/placement'
 import { FURNITURE } from '../../src/decor/furnitureCatalog'
 import type { ArtworkItem, Facing, FurnitureItem, FurnitureType, LampItem, PlantItem } from '../../src/model/decor'
 
@@ -25,10 +34,32 @@ const artwork: ArtworkItem = {
   fit: 'cover',
   frame: { style: 'thin', color: '#000000', mat: 0 },
 }
-const plant = (species: PlantItem['species']): PlantItem => ({ kind: 'plant', id: 'p', species, pot: 'clay', at: [0, -100, 0], rotation: 0, scale: 1 })
-const lamp = (type: LampItem['type']): LampItem => ({ kind: 'lamp', id: 'l', type, at: [0, -100, 0], rotation: 0, on: true, brightness: 1, warmth: 2700, color: '#ffffff' })
+const plant = (species: PlantItem['species']): PlantItem => ({
+  kind: 'plant',
+  id: 'p',
+  species,
+  pot: 'clay',
+  at: [0, -100, 0],
+  rotation: 0,
+  scale: 1,
+})
+const lamp = (type: LampItem['type']): LampItem => ({
+  kind: 'lamp',
+  id: 'l',
+  type,
+  at: [0, -100, 0],
+  rotation: 0,
+  on: true,
+  brightness: 1,
+  warmth: 2700,
+  color: '#ffffff',
+})
 
-const floorHit = (x: number, z: number, y = 0): SurfaceHit => ({ point: new THREE.Vector3(x, y, z), normal: new THREE.Vector3(0, 1, 0), kind: 'up' })
+const floorHit = (x: number, z: number, y = 0): SurfaceHit => ({
+  point: new THREE.Vector3(x, y, z),
+  normal: new THREE.Vector3(0, 1, 0),
+  kind: 'up',
+})
 const wallHit = (p: [number, number, number], n: [number, number, number], host?: string): SurfaceHit => ({
   point: new THREE.Vector3(...p),
   normal: new THREE.Vector3(...n),

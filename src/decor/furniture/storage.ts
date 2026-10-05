@@ -1,0 +1,85 @@
+import type { FurnitureType } from '../../model/decor'
+import { PLY, BLACK, finish, BODY_FINISHES, type FurnitureSpec } from './spec'
+
+// Shelves, wardrobes, sideboards and dividers.
+
+export const STORAGE = {
+  bookshelf: {
+    label: 'Cubby bookshelf',
+    note: 'Open plywood boxes',
+    group: 'Storage',
+    mount: 'surface',
+    size: [1.05, 1.08, 0.33],
+    presets: [
+      { label: '3 × 3', size: [1.05, 1.08, 0.33] },
+      { label: '4 × 2', size: [1.4, 0.72, 0.33] },
+      { label: '2 × 5 tall', size: [0.72, 1.8, 0.33] },
+    ],
+    uses: ['body'],
+    finish: finish(),
+    options: { books: true },
+    optionSpecs: [{ key: 'books', label: 'Books', kind: 'toggle' }],
+    editable: ['w', 'h', 'd'],
+  },
+  wardrobe: {
+    label: 'Plywood wardrobe',
+    note: 'Finger-hole doors, open side',
+    group: 'Storage',
+    mount: 'surface',
+    size: [1.6, 2.4, 0.6],
+    uses: ['body'],
+    finish: finish(),
+    options: { sideShelf: true },
+    optionSpecs: [{ key: 'sideShelf', label: 'Open shelf on the side', kind: 'toggle' }],
+    editable: ['w', 'h', 'd'],
+  },
+  sideboard: {
+    label: 'Low sideboard',
+    note: 'Sliding doors, for a TV',
+    group: 'Storage',
+    mount: 'surface',
+    size: [1.6, 0.5, 0.42],
+    uses: ['body', 'metal'],
+    finish: finish(BODY_FINISHES[1].color, BLACK),
+    options: { legs: true },
+    optionSpecs: [{ key: 'legs', label: 'Steel legs', kind: 'toggle' }],
+    editable: ['w', 'h', 'd'],
+  },
+  blockShelf: {
+    label: 'Block & plank shelf',
+    note: 'Cinder blocks, wood planks',
+    group: 'Storage',
+    mount: 'surface',
+    size: [1.2, 0.8, 0.3],
+    presets: [
+      { label: '2 levels', size: [1.2, 0.8, 0.3] },
+      { label: '3 levels', size: [1.2, 1.2, 0.3] },
+      { label: 'Long bench', size: [1.8, 0.4, 0.3] },
+    ],
+    uses: ['body'],
+    finish: finish(BODY_FINISHES[1].color),
+    options: { levels: 2 },
+    optionSpecs: [{ key: 'levels', label: 'Levels', kind: 'range', min: 1, max: 4, step: 1 }],
+    editable: ['w', 'h', 'd'],
+  },
+  wireBasket: {
+    label: 'Wire basket',
+    note: 'Lined with a burlap coffee sack',
+    group: 'Storage',
+    mount: 'surface',
+    size: [0.42, 0.5, 0.42],
+    presets: [
+      { label: 'Small', size: [0.32, 0.36, 0.32] },
+      { label: 'Laundry', size: [0.42, 0.5, 0.42] },
+      { label: 'Tall', size: [0.4, 0.62, 0.4] },
+    ],
+    uses: ['metal'],
+    finish: finish(PLY, BLACK),
+    options: { sack: true, laundry: true },
+    optionSpecs: [
+      { key: 'sack', label: 'Burlap coffee sack', kind: 'toggle' },
+      { key: 'laundry', label: 'Filled with laundry', kind: 'toggle' },
+    ],
+    editable: ['w', 'h'],
+  },
+} satisfies Partial<Record<FurnitureType, FurnitureSpec>>

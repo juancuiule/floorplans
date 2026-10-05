@@ -4,7 +4,8 @@ import * as THREE from 'three'
 import type { FurnitureItem } from '../../../model/decor'
 import { requestShadowUpdate } from '../../shadows'
 import { Merged } from '../../Merged'
-import { B, mat, Rod } from './common'
+import { B, Rod } from './common'
+import { mat } from './furnitureMaterials'
 
 export function Sofa({ item }: { item: FurnitureItem }) {
   const [w, h, d] = item.size
@@ -24,7 +25,13 @@ export function Sofa({ item }: { item: FurnitureItem }) {
         [1, -1],
         [1, 1],
       ].map(([sx, sz]) => (
-        <Rod key={`${sx}${sz}`} a={[sx * (w / 2 - 0.06), 0, sz * (d / 2 - 0.06)]} b={[sx * (w / 2 - 0.06), legH, sz * (d / 2 - 0.06)]} radius={0.012} m={legs} />
+        <Rod
+          key={`${sx}${sz}`}
+          a={[sx * (w / 2 - 0.06), 0, sz * (d / 2 - 0.06)]}
+          b={[sx * (w / 2 - 0.06), legH, sz * (d / 2 - 0.06)]}
+          radius={0.012}
+          m={legs}
+        />
       ))}
       <B s={[w, baseH, d]} p={[0, legH + baseH / 2, 0]} m={fabric} />
       {[-1, 1].map((sx) => (
@@ -44,7 +51,17 @@ export function Sofa({ item }: { item: FurnitureItem }) {
   )
 }
 
-export function Chair({ body, metal, position, rotation = 0 }: { body: string; metal: string; position?: [number, number, number]; rotation?: number }) {
+export function Chair({
+  body,
+  metal,
+  position,
+  rotation = 0,
+}: {
+  body: string
+  metal: string
+  position?: [number, number, number]
+  rotation?: number
+}) {
   const wood = mat(body)
   const steel = mat(metal, 'metal')
   const seatY = 0.45
@@ -153,7 +170,11 @@ export function StandingDesk({ item }: { item: FurnitureItem }) {
         <group key={sx}>
           <B s={[0.07, 0.03, d - 0.06]} p={[sx * legX, 0.015, 0]} m={steel} />
           <B s={[0.08, baseCol - 0.03, 0.06]} p={[sx * legX, 0.03 + (baseCol - 0.03) / 2, 0]} m={steel} />
-          <group ref={(el) => void (uppers.current[i] = el)} position={[sx * legX, baseCol, 0]} userData={{ noMerge: true }}>
+          <group
+            ref={(el) => void (uppers.current[i] = el)}
+            position={[sx * legX, baseCol, 0]}
+            userData={{ noMerge: true }}
+          >
             <B s={[0.065, upperLen, 0.05]} p={[0, upperLen / 2, 0]} m={steel} />
           </group>
         </group>
@@ -174,7 +195,15 @@ export function StandingDesk({ item }: { item: FurnitureItem }) {
           {item.options.riser !== false && (
             <group position={[0, target, -d / 2 + 0.16]}>
               {[-1, 1].flatMap((sx) =>
-                [-1, 1].map((sz) => <Rod key={`${sx}${sz}`} a={[sx * (w * 0.36 - 0.03), 0, sz * 0.09]} b={[sx * (w * 0.36 - 0.03), 0.1, sz * 0.09]} radius={0.01} m={brass} />),
+                [-1, 1].map((sz) => (
+                  <Rod
+                    key={`${sx}${sz}`}
+                    a={[sx * (w * 0.36 - 0.03), 0, sz * 0.09]}
+                    b={[sx * (w * 0.36 - 0.03), 0.1, sz * 0.09]}
+                    radius={0.01}
+                    m={brass}
+                  />
+                )),
               )}
               <B s={[w * 0.76, 0.022, 0.24]} p={[0, 0.111, 0]} m={top} />
             </group>
@@ -193,7 +222,13 @@ export function StandingDesk({ item }: { item: FurnitureItem }) {
 }
 
 // We look at the inside of an open cylinder, so the screen must be double-sided.
-const screenMaterial = new THREE.MeshStandardMaterial({ color: '#141518', roughness: 0.2, emissive: '#1a2a3f', emissiveIntensity: 0.35, side: THREE.DoubleSide })
+const screenMaterial = new THREE.MeshStandardMaterial({
+  color: '#141518',
+  roughness: 0.2,
+  emissive: '#1a2a3f',
+  emissiveIntensity: 0.35,
+  side: THREE.DoubleSide,
+})
 const bezelMaterial = new THREE.MeshStandardMaterial({ color: '#2a2b2e', roughness: 0.5, side: THREE.DoubleSide })
 
 /** Curved 34" ultrawide: a thin shell with a dark glass front. */
@@ -248,7 +283,14 @@ export function DiningTable({ item }: { item: FurnitureItem }) {
         <group>
           <B s={[w, topT, d]} p={[0, h - topT / 2, 0]} m={top} />
           {[-1, 1].flatMap((sx) =>
-            [-1, 1].map((sz) => <B key={`${sx}${sz}`} s={[0.025, h - topT, 0.025]} p={[sx * (w / 2 - 0.05), (h - topT) / 2, sz * (d / 2 - 0.05)]} m={steel} />),
+            [-1, 1].map((sz) => (
+              <B
+                key={`${sx}${sz}`}
+                s={[0.025, h - topT, 0.025]}
+                p={[sx * (w / 2 - 0.05), (h - topT) / 2, sz * (d / 2 - 0.05)]}
+                m={steel}
+              />
+            )),
           )}
           {[-1, 1].map((sz) => (
             <B key={sz} s={[w - 0.1, 0.04, 0.02]} p={[0, h - topT - 0.02, sz * (d / 2 - 0.05)]} m={steel} />

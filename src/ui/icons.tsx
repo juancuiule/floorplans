@@ -1,5 +1,4 @@
 import { memo } from 'react'
-import type { DecorItem, FurnitureType, LampType, PlantSpecies } from '../model/decor'
 
 // Line icons on a 20 × 20 grid, 1.5 stroke, round caps. Every path is drawn in
 // currentColor so an icon takes the color of the text beside it.
@@ -14,8 +13,21 @@ const PATHS = {
   minus: 'M4.5 10h11',
   chevron: 'M6 8l4 4 4-4',
   trash: 'M4 6h12M8 6V4.5h4V6M5.5 6l.7 10h7.6l.7-10M8.5 9v4.5M11.5 9v4.5',
+  // floor plan editor
+  pointer: 'M5.5 3.5l9.5 6-4.3 1.1L8.4 15z',
+  room: 'M3.5 3.5h7v4h6v9h-13zM6.5 6.5v.01M13.5 13.5v.01',
+  door: 'M5 16.5v-13h8v13M3 16.5h14M10.5 10v.5',
+  window: 'M3.5 4.5h13v11h-13zM10 4.5v11M3.5 10h13',
+  glassDoor: 'M4.5 16.5v-13h11v13M10 3.5v13M3 16.5h14M8.5 9.5v1.5M11.5 9.5v1.5',
+  passage: 'M4.5 16.5v-9a5.5 5.5 0 0 1 11 0v9M3 16.5h14',
+  fitting: 'M6 3.5h8v3.5H6zM4.5 7h11a5.5 5.5 0 0 1-11 0zM8 12l-.5 4.5h5L12 12',
+  undo: 'M7.5 4.5 4 8l3.5 3.5M4 8h7.5a4.5 4.5 0 0 1 0 9H9',
+  redo: 'M12.5 4.5 16 8l-3.5 3.5M16 8H8.5a4.5 4.5 0 0 0 0 9H11',
+  fit: 'M3.5 7V3.5H7M13 3.5h3.5V7M16.5 13v3.5H13M7 16.5H3.5V13',
+  eye: 'M2.5 10s3-5.5 7.5-5.5S17.5 10 17.5 10s-3 5.5-7.5 5.5S2.5 10 2.5 10zM10 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
   upload: 'M10 13V4M6.5 7.5 10 4l3.5 3.5M4 12.5V16h12v-3.5',
-  panel: 'M4.5 4h11A1.5 1.5 0 0 1 17 5.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5v-9A1.5 1.5 0 0 1 4.5 4zM12 4v12',
+  panel:
+    'M4.5 4h11A1.5 1.5 0 0 1 17 5.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5v-9A1.5 1.5 0 0 1 4.5 4zM12 4v12',
   brush: 'M15.5 3.5l1 1-6.8 6.8-1.9-.1-.1-1.9zM7.4 11.8c-1.6 0-2.9 1.2-2.9 2.8 0 .9-.5 1.6-1.5 1.9 3 .8 6.2-.4 6.4-2.8',
   help: 'M10 3a7 7 0 1 1 0 14 7 7 0 0 1 0-14zM7.9 8a2.2 2.2 0 1 1 3.1 2c-.6.3-1 .8-1 1.4v.3M10 14.2v.1',
   sun: 'M10 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM10 2.5v1.5M10 16v1.5M2.5 10H4M16 10h1.5M4.7 4.7l1 1M14.3 14.3l1 1M4.7 15.3l1-1M14.3 5.7l1-1',
@@ -31,13 +43,15 @@ const PATHS = {
   camera: 'M3.5 6.5h3l1.5-2h4l1.5 2h3v9h-13zM10 8.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z',
   move: 'M10 3v14M3 10h14M8 5l2-2 2 2M8 15l2 2 2-2M5 8l-2 2 2 2M15 8l2 2-2 2',
   duplicate: 'M8 7h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM13 4H5a1 1 0 0 0-1 1v8',
-  image: 'M4 4h12a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM3 13l4-4 3 3 2-2 5 4M13 6.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z',
+  image:
+    'M4 4h12a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM3 13l4-4 3 3 2-2 5 4M13 6.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z',
   alert: 'M10 3.5 17 16H3zM10 8.5v3.5M10 14.2v.1',
   check: 'M4.5 10.5 8 14l7.5-8',
   layers: 'M10 3.5 17 7l-7 3.5L3 7zM3 10.5 10 14l7-3.5M3 14l7 3.5 7-3.5',
   pencil: 'M12.5 4.5l3 3L7 16H4v-3zM11 6l3 3',
   compare: 'M7 4v12M13 4v12M4 7l3-3 3 3M10 13l3 3 3-3',
-  roller: 'M4 3.5h10a1 1 0 0 1 1 1V7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1zM15 5.5h1.5a.5.5 0 0 1 .5.5v3.5a.5.5 0 0 1-.5.5H10v2.5M9 12.5h2v5H9z',
+  roller:
+    'M4 3.5h10a1 1 0 0 1 1 1V7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1zM15 5.5h1.5a.5.5 0 0 1 .5.5v3.5a.5.5 0 0 1-.5.5H10v2.5M9 12.5h2v5H9z',
 
   // ---------- furniture ----------
   platformBed: 'M3 5v11M3 11h14v3H3M17 14v2M5 11V9.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V11',
@@ -61,12 +75,15 @@ const PATHS = {
   fruitBaskets: 'M10 2v3M4 5.5a6 3 0 0 0 12 0zM5 11a5 2.5 0 0 0 10 0zM6.5 15.5a3.5 2 0 0 0 7 0zM10 8.5V11M10 13.5v2',
   stationClock: 'M10 3.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM10 6.5V10l2.5 1.5',
   hangingRack: 'M2 3h16M5 3v5M15 3v5M3 8h14v3H3zM7 8v3M10 8v3M13 8v3M6 11v4M14 11v3',
-  speakers: 'M2.5 4.5h5.5v11H2.5zM12 4.5h5.5v11H12zM5.25 9.9a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zM14.75 9.9a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zM5.25 7v.1M14.75 7v.1',
-  standMixer: 'M3.5 16.5h12M6 16.5V9M5 9V6.5A1.5 1.5 0 0 1 6.5 5h7.5a2 2 0 0 1 0 4H5zM9 11.5h6.5l-1.2 4h-4.1zM12.5 9v2.5',
+  speakers:
+    'M2.5 4.5h5.5v11H2.5zM12 4.5h5.5v11H12zM5.25 9.9a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zM14.75 9.9a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zM5.25 7v.1M14.75 7v.1',
+  standMixer:
+    'M3.5 16.5h12M6 16.5V9M5 9V6.5A1.5 1.5 0 0 1 6.5 5h7.5a2 2 0 0 1 0 4H5zM9 11.5h6.5l-1.2 4h-4.1zM12.5 9v2.5',
   espressoMachine: 'M4 3.5h12V7H4zM5 7v9.5M3.5 16.5h13M8.5 7v1.5h3V7M11.5 8.5l4 1M8.5 12.5h3l-.4 3H8.9z',
   turntable: 'M2.5 5h15v10h-15zM8 6.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4zM8 9.9v.2M15 6.5V11l-2 1.5',
   acIndoor: 'M2.5 5h15v5.5A1.5 1.5 0 0 1 16 12H4a1.5 1.5 0 0 1-1.5-1.5zM5 9.5h10M6 14.5l-1 2M10 14.5v2M14 14.5l1 2',
-  acOutdoor: 'M2.5 4.5h15v11h-15zM8 6.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM8 8.5v3M6.5 10h3M14 7v6M15.8 7v6M4 15.5V17M16 15.5V17',
+  acOutdoor:
+    'M2.5 4.5h15v11h-15zM8 6.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM8 8.5v3M6.5 10h3M14 7v6M15.8 7v6M4 15.5V17M16 15.5V17',
   tv: 'M2.5 4h15v9.5h-15zM5 17l2-3.5M15 17l-2-3.5',
   tvWall: 'M2 3.5v13M4.5 5h13v9h-13zM2 10h2.5',
   fridge: 'M5 2.5h10v15H5zM5 8h10M7.5 4.5v2M7.5 10v3',
@@ -76,11 +93,14 @@ const PATHS = {
   bistroChair: 'M6 9.5V4.5c0-1.5 8-1.5 8 0v5M4.5 9.5h11M6 9.5 4.5 17M14 9.5l1.5 7.5M8 9.5 7.5 17M12 9.5l.5 7.5',
   windowBench: 'M5 2.5h10v6H5zM10 2.5v6M2.5 11h15v5.5h-15zM2.5 11V9.5h15V11M7.5 11v5.5M12.5 11v5.5',
   wireBasket: 'M4 5h12l-1.2 11.5H5.2zM7 5l.5 11.5M10 5v11.5M13 5l-.5 11.5M4.4 9h11.2M4.8 13h10.4',
-  balconyBench: 'M2.5 11h15v2.5h-15zM3.5 13.5v3M16.5 13.5v3M4 11V7.5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1V11M10.5 11V7.5a1 1 0 0 1 1-1H15a1 1 0 0 1 1 1V11',
-  planterWall: 'M3 4h14v12H3zM3 8h14M3 12h14M10 4v4M6.5 8v4M13.5 8v4M10 12v4M5.5 6.5c.5-1 1.5-1 2 0M12.5 14.5c.5-1 1.5-1 2 0',
+  balconyBench:
+    'M2.5 11h15v2.5h-15zM3.5 13.5v3M16.5 13.5v3M4 11V7.5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1V11M10.5 11V7.5a1 1 0 0 1 1-1H15a1 1 0 0 1 1 1V11',
+  planterWall:
+    'M3 4h14v12H3zM3 8h14M3 12h14M10 4v4M6.5 8v4M13.5 8v4M10 12v4M5.5 6.5c.5-1 1.5-1 2 0M12.5 14.5c.5-1 1.5-1 2 0',
   retroClock: 'M10 3 17 15.5H3zM10 8.5a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6zM10 11.3V9.8M10 11.3h1.2',
   railTable: 'M3.5 3v14M3.5 8H17M3.5 15.5 9 8M3.5 6h2',
-  embroideryHoop: 'M10 4a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM10 1.5V4M8.5 1.5h3M8 9h1.5v1.5H8zM10.5 10.5H12V12h-1.5zM8 12h1.5v1.5H8z',
+  embroideryHoop:
+    'M10 4a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM10 1.5V4M8.5 1.5h3M8 9h1.5v1.5H8zM10.5 10.5H12V12h-1.5zM8 12h1.5v1.5H8z',
   mugs: 'M2.5 8h5.5v7.5a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1zM8 10h1a1.5 1.5 0 0 1 0 3H8M11 6h5.5v9.5a1 1 0 0 1-1 1h-3.5a1 1 0 0 1-1-1zM16.5 8h1a1.5 1.5 0 0 1 0 3h-1M5 3.5c-.5 1 .5 1.5 0 2.5M14 1.5c-.5 1 .5 1.5 0 2.5',
 
   // ---------- plants ----------
@@ -93,7 +113,8 @@ const PATHS = {
   plantTrailing: 'M10 2v4M6.5 6h7l-1 3.5h-5zM7.5 9.5c-1 2 .5 3.5-.5 5.5s0 2.5 0 2.5M12.5 9.5c1 2-.5 3.5.5 5.5M10 9.5v4',
   plantBox: 'M3 12h14l-1 4H4zM6 12V7.5M10 12V6M14 12V7.5M6 9l-1.5-1M10 8l1.5-1M14 9.5l1.5-1',
   plantBush: `${POT}M10 13v-2.5M6 10.5a2.5 2.5 0 0 1 1.5-4.4 2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1 1.5 4.4z`,
-  plantCollection: 'M2.5 13h4l-.5 3h-3zM8 13h4l-.5 3h-3zM13.5 13h4l-.5 3h-3zM4.5 13v-2M3.3 10.5l1.2.5 1.2-.5M10 13V9.5a1 1 0 0 1 1-1M15.5 13v-2.5M14.3 11l1.2-1 1.2 1',
+  plantCollection:
+    'M2.5 13h4l-.5 3h-3zM8 13h4l-.5 3h-3zM13.5 13h4l-.5 3h-3zM4.5 13v-2M3.3 10.5l1.2.5 1.2-.5M10 13V9.5a1 1 0 0 1 1-1M15.5 13v-2.5M14.3 11l1.2-1 1.2 1',
 
   // ---------- lights ----------
   lampArc: 'M4 17h5M6.5 17V8.5A5.5 5.5 0 0 1 12 3h1.5M11.5 6.5h5L15 3.5h-2z',
@@ -107,12 +128,21 @@ const PATHS = {
   lampSconce: 'M4 4v12M4 10h3M6.5 5h7l-1.5 5h-4zM8.5 3l-.5-1M12 3l.5-1',
   lampExit: 'M4 5h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM6.5 8.5h7M6.5 11.5h4',
   lampExitCeiling: 'M10 2v3.5M3 5.5h14v9H3zM6 8v4h2M6 10h1.5M6 8h2M9.5 8l2.5 4M12 8l-2.5 4M14 8v4',
-  lampString: 'M2 4.5c5 4 11 4 16 0M6 7.3v1.2M10 8v1.2M14 7.3v1.2M6 8.5a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM10 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM14 8.5a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6z',
+  lampString:
+    'M2 4.5c5 4 11 4 16 0M6 7.3v1.2M10 8v1.2M14 7.3v1.2M6 8.5a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM10 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM14 8.5a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6z',
 } as const
 
 export type IconName = keyof typeof PATHS
 
-export const Icon = memo(function Icon({ name, size = 16, className }: { name: IconName; size?: number; className?: string }) {
+export const Icon = memo(function Icon({
+  name,
+  size = 16,
+  className,
+}: {
+  name: IconName
+  size?: number
+  className?: string
+}) {
   return (
     <svg
       className={className ? `icon ${className}` : 'icon'}
@@ -131,93 +161,3 @@ export const Icon = memo(function Icon({ name, size = 16, className }: { name: I
     </svg>
   )
 })
-
-export const FURNITURE_ICON: Record<FurnitureType, IconName> = {
-  platformBed: 'platformBed',
-  murphyBed: 'murphyBed',
-  daybed: 'daybed',
-  sofa: 'sofa',
-  standingDesk: 'standingDesk',
-  diningTable: 'diningTable',
-  chair: 'chair',
-  butterflyChair: 'butterflyChair',
-  bookshelf: 'bookshelf',
-  wardrobe: 'wardrobe',
-  sideboard: 'sideboard',
-  blockShelf: 'blockShelf',
-  rug: 'rug',
-  gridShelf: 'gridShelf',
-  upperCabinets: 'upperCabinets',
-  floatingShelf: 'floatingShelf',
-  pegGrid: 'pegGrid',
-  kitchenRail: 'kitchenRail',
-  fruitBaskets: 'fruitBaskets',
-  stationClock: 'stationClock',
-  hangingRack: 'hangingRack',
-  speakers: 'speakers',
-  standMixer: 'standMixer',
-  espressoMachine: 'espressoMachine',
-  turntable: 'turntable',
-  acIndoor: 'acIndoor',
-  acOutdoor: 'acOutdoor',
-  tv: 'tv',
-  tvWall: 'tvWall',
-  fridge: 'fridge',
-  loftBed: 'loftBed',
-  glassDivider: 'glassDivider',
-  officeChair: 'officeChair',
-  bistroChair: 'bistroChair',
-  windowBench: 'windowBench',
-  wireBasket: 'wireBasket',
-  balconyBench: 'balconyBench',
-  planterWall: 'planterWall',
-  retroClock: 'retroClock',
-  railTable: 'railTable',
-  embroideryHoop: 'embroideryHoop',
-  mugs: 'mugs',
-}
-
-export const PLANT_ICON: Record<PlantSpecies, IconName> = {
-  monstera: 'plantLeaves',
-  fiddle: 'plantTree',
-  snake: 'plantBlades',
-  palm: 'plantFronds',
-  fern: 'plantFronds',
-  olive: 'plantTree',
-  cactus: 'plantCactus',
-  lavender: 'plantBox',
-  pothos: 'plantTrailing',
-  succulent: 'plantRosette',
-  herbs: 'plantBush',
-  aloe: 'plantRosette',
-  haworthia: 'plantRosette',
-  jade: 'plantBush',
-  burro: 'plantTrailing',
-  rubber: 'plantTree',
-  croton: 'plantLeaves',
-  spider: 'plantFronds',
-  collection: 'plantCollection',
-  windowBox: 'plantBox',
-}
-
-export const LAMP_ICON: Record<LampType, IconName> = {
-  arc: 'lampArc',
-  tripod: 'lampTripod',
-  table: 'lampTable',
-  mushroom: 'lampMushroom',
-  flowerpot: 'lampFlowerpot',
-  pendant: 'lampPendant',
-  globe: 'lampGlobe',
-  lantern: 'lampLantern',
-  sconce: 'lampSconce',
-  exit: 'lampExit',
-  exitCeiling: 'lampExitCeiling',
-  string: 'lampString',
-}
-
-export function itemIcon(item: DecorItem): IconName {
-  if (item.kind === 'furniture') return FURNITURE_ICON[item.type]
-  if (item.kind === 'plant') return PLANT_ICON[item.species]
-  if (item.kind === 'lamp') return LAMP_ICON[item.type]
-  return 'image'
-}

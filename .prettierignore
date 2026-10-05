@@ -1,0 +1,18 @@
+# Generated
+dist
+test-results
+pnpm-lock.yaml
+
+# Data written by the app or by hand, kept byte-stable so diffs stay small
+examples
+tests/e2e/fixtures
+
+# Binary assets
+public
+docs/*.jpg
+docs/*.webp
+
+# Prose: Prettier pads table columns to the longest cell, so any edit rewrites the table
+*.md
+.claude
+tests/e2e/.data

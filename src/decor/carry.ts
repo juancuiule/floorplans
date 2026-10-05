@@ -33,8 +33,30 @@ export function supportFrame(item: DecorItem): Frame | null {
   if (item.kind !== 'furniture' || item.at[1] < -1) return null
   const [w, h, d] = item.size
   const mount = mountOf(item)
-  if (mount === 'surface') return { x: item.at[0], z: item.at[2], theta: rad(item.rotation), x0: -w / 2, x1: w / 2, z0: -d / 2, z1: d / 2, base: item.at[1], top: item.at[1] + h }
-  if (mount === 'wall' && item.facing) return { x: item.at[0], z: item.at[2], theta: facingRotation[item.facing], x0: -w / 2, x1: w / 2, z0: 0, z1: d, base: item.at[1], top: item.at[1] + h }
+  if (mount === 'surface')
+    return {
+      x: item.at[0],
+      z: item.at[2],
+      theta: rad(item.rotation),
+      x0: -w / 2,
+      x1: w / 2,
+      z0: -d / 2,
+      z1: d / 2,
+      base: item.at[1],
+      top: item.at[1] + h,
+    }
+  if (mount === 'wall' && item.facing)
+    return {
+      x: item.at[0],
+      z: item.at[2],
+      theta: facingRotation[item.facing],
+      x0: -w / 2,
+      x1: w / 2,
+      z0: 0,
+      z1: d,
+      base: item.at[1],
+      top: item.at[1] + h,
+    }
   return null
 }
 
@@ -92,7 +114,8 @@ export function carryRider<T extends DecorItem>(rider: T, from: DecorItem, to: D
   const next = { ...rider, at: [r3(x), r3(y), r3(z)] } as T
   if ('rotation' in next && typeof next.rotation === 'number') {
     const turn = ((g.theta - f.theta) * 180) / Math.PI
-    if (Math.abs(turn) > 1e-6) (next as { rotation: number }).rotation = r3((((next.rotation + turn) % 360) + 360) % 360)
+    if (Math.abs(turn) > 1e-6)
+      (next as { rotation: number }).rotation = r3((((next.rotation + turn) % 360) + 360) % 360)
   }
   return next
 }
@@ -103,7 +126,8 @@ function frameChanged(a: DecorItem, b: DecorItem): boolean {
   if (a.at[0] !== b.at[0] || a.at[1] !== b.at[1] || a.at[2] !== b.at[2]) return true
   if ('rotation' in a && 'rotation' in b && a.rotation !== b.rotation) return true
   if ('facing' in a && 'facing' in b && a.facing !== b.facing) return true
-  if (a.kind === 'furniture' && b.kind === 'furniture') return (a as FurnitureItem).size.some((v, i) => v !== (b as FurnitureItem).size[i])
+  if (a.kind === 'furniture' && b.kind === 'furniture')
+    return (a as FurnitureItem).size.some((v, i) => v !== (b as FurnitureItem).size[i])
   return false
 }
 

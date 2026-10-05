@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
 import type { Bulge, SceneObject } from '../../src/model/types'
-import plan from '../../src/plans/monoambiente.plan.json'
+import plan from '../../examples/monoambiente/plans/monoambiente.plan.json'
 import { cornerShelf, SHELF, showerFrame } from '../../src/scene/showerFrame'
 
 const tray = plan.fixtures.find((o) => o.type === 'showerTray') as unknown as SceneObject

@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "kind": "furniture",
+      "id": "f-desk",
+      "type": "standingDesk",
+      "at": [
+        4.8,
+        0,
+        2.65
+      ],
+      "rotation": 180,
+      "size": [
+        1.4,
+        0.72,
+        0.7
+      ],
+      "finish": {
+        "body": "#6a4731",
+        "metal": "#1d1d1d",
+        "fabric": "#e6e0d4"
+      },
+      "options": {}
+    },
+    {
+      "kind": "furniture",
+      "id": "f-wardrobe",
+      "type": "wardrobe",
+      "at": [
+        5.14,
+        0,
+        0.3
+      ],
+      "rotation": 0,
+      "size": [
+        1.6,
+        2.4,
+        0.6
+      ],
+      "finish": {
+        "body": "#c9a57a",
+        "metal": "#1d1d1d",
+        "fabric": "#e6e0d4"
+      },
+      "options": {}
+    }
+  ]
+}

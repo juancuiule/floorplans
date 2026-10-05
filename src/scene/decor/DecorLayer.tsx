@@ -1,6 +1,5 @@
 import type { CameraControls } from '@react-three/drei'
 import { paintAt } from '../../decor/paint'
-import { useUi } from '../../ui/uiStore'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import * as THREE from 'three'
@@ -8,57 +7,33 @@ import { followLead } from '../../decor/arrange'
 import { editRefs, useEdit } from '../../decor/edit'
 import { translated } from '../../decor/extent'
 import { buildGuideCtx, guideMove, worldGuides, type GuideCtx } from '../../decor/guides'
-import { facingOf, facingRotation, facingVector, mountOf, placeAt, readIntersection, slidesOnFloor, type SnapFace, type SurfaceHit } from '../../decor/placement'
+import {
+  facingOf,
+  facingRotation,
+  facingVector,
+  mountOf,
+  placeAt,
+  readIntersection,
+  slidesOnFloor,
+  type SnapFace,
+  type SurfaceHit,
+} from '../../decor/placement'
 import { settleMoved } from '../../decor/rest'
 import { useDecor } from '../../decor/store'
-import type { DecorItem } from '../../model/decor'
+import { UNPLACED_Y, type DecorItem } from '../../model/decor'
 import { useView } from '../../store'
+import { decorIdOf, firstSolid, hidden } from '../pick'
 import { requestShadowUpdate } from '../shadows'
-import { cutWalls } from '../Walls'
+import { cutWalls } from '../cutWalls'
 import { Artwork } from './Artwork'
+import { ArtworkBoundary } from './ArtworkBoundary'
 import { Furniture } from './furniture/Furniture'
 import { EditOverlays } from './Gizmo'
 import { Lamp } from './Lamp'
 import { Plant } from './Plant'
 
-/** Below this y a draft has not been dropped on a valid surface yet. */
-const UNPLACED_Y = -50
 /** Pixels the pointer must travel before a press on an item becomes a drag. */
 const DRAG_THRESHOLD = 4
-
-export const unplacedAt = (): [number, number, number] => [0, UNPLACED_Y - 1, 0]
-
-/** The decor item an object belongs to, if any. */
-export function decorIdOf(o: THREE.Object3D | null): string | null {
-  for (; o; o = o.parent) if (o.userData.decorId) return o.userData.decorId as string
-  return null
-}
-
-/** Not drawn at all: a hidden object or parent, or only invisible materials (a faded-out wall). */
-function hidden(o: THREE.Object3D): boolean {
-  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return true
-  const m = (o as THREE.Mesh).material
-  const mats = Array.isArray(m) ? m : m ? [m] : []
-  return mats.length > 0 && mats.every((x) => !x.visible)
-}
-
-/**
- * Whether the pointer sees through this hit when picking items: hidden or
- * editor-helper objects, and architecture faded by x-ray or dollhouse mode.
- */
-function seeThrough(o: THREE.Object3D): boolean {
-  // Edge lines and points are picked from far away (raycaster line threshold): never let them block.
-  if (!(o as THREE.Mesh).isMesh || o.userData.editHelper || hidden(o)) return true
-  if (decorIdOf(o)) return false
-  const m = (o as THREE.Mesh).material
-  const mats = Array.isArray(m) ? m : m ? [m] : []
-  return mats.length > 0 && mats.every((x) => !x.visible || (x.transparent && x.opacity < 0.5))
-}
-
-/** First hit the eye actually sees. */
-export function firstSolid(list: THREE.Intersection[]) {
-  return list.find((i) => !seeThrough(i.object))
-}
 
 /** First hit that is a usable surface, ignoring decor if asked (floor pieces slide on the floor). */
 function surfaceUnder(list: THREE.Intersection[], opts: { skipIds?: Set<string>; skipDecor?: boolean }) {
@@ -98,7 +73,7 @@ let guideCtxFor: string | null = null
 let lastPress: { id: string; t: number } | null = null
 const DOUBLE_MS = 400
 
-export function clearGuides() {
+function clearGuides() {
   guideCtx = null
   guideCtxFor = null
   if (useEdit.getState().guides) useEdit.getState().set({ guides: null })
@@ -117,7 +92,10 @@ function moveSelection(item: DecorItem, patch: Partial<DecorItem>, faces: SnapFa
   const s = useDecor.getState()
   const leadTo = { ...item, ...patch } as DecorItem
   const leadFrom = s.backup ?? item
-  const moved: DecorItem[] = [leadTo, ...s.followers.map((f) => ({ ...f, ...followLead(leadFrom, leadTo, f) }) as DecorItem)]
+  const moved: DecorItem[] = [
+    leadTo,
+    ...s.followers.map((f) => ({ ...f, ...followLead(leadFrom, leadTo, f) }) as DecorItem),
+  ]
   let guides = null
   if (!free) {
     if (!guideCtx || guideCtxFor !== item.id) {
@@ -126,7 +104,9 @@ function moveSelection(item: DecorItem, patch: Partial<DecorItem>, faces: SnapFa
     }
     const g = guideMove(guideCtx, leadTo, moved, locksOf(faces))
     if (g) {
-      if (g.result.du || g.result.dv) for (let i = 0; i < moved.length; i++) moved[i] = { ...moved[i], at: translated(moved[i].at, g.delta) } as DecorItem
+      if (g.result.du || g.result.dv)
+        for (let i = 0; i < moved.length; i++)
+          moved[i] = { ...moved[i], at: translated(moved[i].at, g.delta) } as DecorItem
       guides = worldGuides(g)
     }
   }
@@ -223,7 +203,7 @@ export function SurfaceEvents({ children }: { children: ReactNode }) {
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     const s = useDecor.getState()
     // Paint brush: a press on a wall paints the side of it under the pointer.
-    const brush = useUi.getState().paintBrush
+    const brush = useEdit.getState().paintBrush
     if (brush !== null && e.button === 0 && !s.movingId) {
       const first = firstSolid(e.intersections)
       const hit = first && !decorIdOf(first.object) ? readIntersection(first) : null
@@ -316,7 +296,11 @@ export function SurfaceEvents({ children }: { children: ReactNode }) {
       moveSelection(item, patch, report.snap, ev.altKey || ev.metaKey || ev.ctrlKey)
       edit.set({ invalid: null, snap: report.snap })
     } else {
-      edit.set({ invalid: { point: under.intersection.point.clone(), normal: hit?.normal ?? new THREE.Vector3(0, 1, 0) }, snap: [], guides: null })
+      edit.set({
+        invalid: { point: under.intersection.point.clone(), normal: hit?.normal ?? new THREE.Vector3(0, 1, 0) },
+        snap: [],
+        guides: null,
+      })
     }
   }
 
@@ -356,7 +340,13 @@ export function SurfaceEvents({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <group ref={root} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onClick={onClick} onPointerLeave={onPointerLeave}>
+    <group
+      ref={root}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onClick={onClick}
+      onPointerLeave={onPointerLeave}
+    >
       {children}
     </group>
   )
@@ -394,7 +384,16 @@ export function DecorLayer() {
   const invalid = useEdit((s) => s.invalid !== null)
   const moving = useDecor((s) => (s.movingId ? (s.isDraft ? 'draft' : 'drag') : null))
   useEffect(() => {
-    const c = rotating || moving === 'drag' ? 'grabbing' : moving && invalid ? 'not-allowed' : moving === 'draft' ? 'copy' : hoverId || handleHover ? 'grab' : ''
+    const c =
+      rotating || moving === 'drag'
+        ? 'grabbing'
+        : moving && invalid
+          ? 'not-allowed'
+          : moving === 'draft'
+            ? 'copy'
+            : hoverId || handleHover
+              ? 'grab'
+              : ''
     gl.domElement.style.cursor = c
   }, [gl, hoverId, handleHover, rotating, invalid, moving])
   useEffect(() => {
@@ -418,7 +417,10 @@ function DecorNode({ item, selected }: { item: DecorItem; selected: boolean }) {
   const ref = useRef<THREE.Group>(null)
   const host = 'host' in item ? item.host : undefined
   const wallMounted = mountOf(item) === 'wall'
-  const rotationY = wallMounted && 'facing' in item && item.facing ? facingRotation[item.facing] : THREE.MathUtils.degToRad('rotation' in item ? item.rotation : 0)
+  const rotationY =
+    wallMounted && 'facing' in item && item.facing
+      ? facingRotation[item.facing]
+      : THREE.MathUtils.degToRad('rotation' in item ? item.rotation : 0)
   const hovered = useEdit((s) => s.hoverId === item.id)
 
   useFrame(() => {
@@ -429,18 +431,35 @@ function DecorNode({ item, selected }: { item: DecorItem; selected: boolean }) {
   return (
     <group ref={ref} position={item.at} rotation={[0, rotationY, 0]} userData={{ decorId: item.id, host }}>
       <Suspense fallback={null}>
-        {item.kind === 'artwork' && <Artwork item={item} />}
+        {item.kind === 'artwork' && (
+          // Keyed by image: picking another image after a failed one tries again.
+          <ArtworkBoundary key={item.image} item={item}>
+            <Artwork item={item} />
+          </ArtworkBoundary>
+        )}
         {item.kind === 'plant' && <Plant item={item} />}
         {item.kind === 'lamp' && <Lamp item={item} />}
         {item.kind === 'furniture' && <Furniture item={item} />}
       </Suspense>
-      {selected ? <OutlineBox target={ref} color="#3b82f6" opacity={1} /> : hovered && <OutlineBox target={ref} color="#3b82f6" opacity={0.45} />}
+      {selected ? (
+        <OutlineBox target={ref} color="#3b82f6" opacity={1} />
+      ) : (
+        hovered && <OutlineBox target={ref} color="#3b82f6" opacity={0.45} />
+      )}
     </group>
   )
 }
 
 /** A thin box around an item, drawn in world space over everything. */
-function OutlineBox({ target, color, opacity }: { target: React.RefObject<THREE.Group | null>; color: string; opacity: number }) {
+function OutlineBox({
+  target,
+  color,
+  opacity,
+}: {
+  target: React.RefObject<THREE.Group | null>
+  color: string
+  opacity: number
+}) {
   const scene = useThree((s) => s.scene)
   const invalidate = useThree((s) => s.invalidate)
   const helper = useMemo(() => {

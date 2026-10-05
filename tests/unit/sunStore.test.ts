@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { daylight, duskLevel } from '../../src/sun/daylight'
+import { openTestPlan } from './plans'
 
 // The view store reads the URL and localStorage at import time: import a fresh copy per test.
 async function freshStore(search = '') {
   window.history.replaceState(null, '', `/${search}`)
   vi.resetModules()
+  await openTestPlan()
   return (await import('../../src/store')).useView
 }
 

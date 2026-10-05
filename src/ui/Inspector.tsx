@@ -1,20 +1,42 @@
 import { memo, useEffect, useState, type ReactNode } from 'react'
-import { FRAME_COLORS, FRAME_STYLES, LAMPS, MAT_WIDTHS, PLANTS, POT_SIZES, POTS, SIZE_PRESETS, WARMTH } from '../decor/catalog'
+import {
+  FRAME_COLORS,
+  FRAME_STYLES,
+  LAMPS,
+  MAT_WIDTHS,
+  PLANTS,
+  POT_SIZES,
+  POTS,
+  SIZE_PRESETS,
+  WARMTH,
+} from '../decor/catalog'
 import { BODY_FINISHES, FABRIC_FINISHES, FURNITURE, METAL_FINISHES, type OptionSpec } from '../decor/furnitureCatalog'
 import { isPendant, MAX_CORD, MIN_CORD, pendantBottom, pendantDrop } from '../decor/pendant'
 import { mountOf } from '../decor/placement'
 import { useDecor } from '../decor/store'
 import { parseYouTube } from '../decor/youtube'
-import type { ArtworkItem, DecorItem, FurnitureItem, LampItem, PlantItem, PlantSpecies, PotSize, SizePreset } from '../model/decor'
+import type {
+  ArtworkItem,
+  DecorItem,
+  FurnitureItem,
+  LampItem,
+  PlantItem,
+  PlantSpecies,
+  PotSize,
+  SizePreset,
+} from '../model/decor'
 import { structureOf } from '../model/finishes'
 import type { Vec3 } from '../model/types'
 import { lostWallOf, WALL_LABELS, type HungItem } from '../project/structure'
-import { artworkOuterSize } from '../scene/decor/Artwork'
-import { screenImageSrc } from '../scene/decor/furniture/Devices'
-import { Chips, Field, NumberInput, Section, Slider, Swatches, Switch, useFieldControlId } from './controls'
+import { artworkOuterSize } from '../decor/extent'
+import { screenImageSrc } from '../decor/api'
+import { Chips, Field, NumberInput, Section, Slider, Swatches, Switch } from './controls'
+import { useFieldControlId } from './fieldIds'
 import { colorName } from './controlUtils'
-import { cm, isPlaced, itemKindLine, itemLabel } from './format'
-import { Icon, itemIcon } from './icons'
+import { cm, itemKindLine, itemLabel } from './format'
+import { Icon } from './icons'
+import { itemIcon } from './itemIcons'
+import { isPlaced } from '../model/decor'
 
 // Settings for the selected item. Subscribes to that one item only, so dragging
 // it re-renders the inspector but not the rest of the panel.
@@ -39,12 +61,20 @@ function InspectorHeader({ item }: { item: DecorItem }) {
   const select = useDecor((s) => s.select)
   return (
     <header className="i-head">
-      <span className="tile large">{item.kind === 'artwork' ? <img src={item.image} alt="" /> : <Icon name={itemIcon(item)} size={22} />}</span>
+      <span className="tile large">
+        {item.kind === 'artwork' ? <img src={item.image} alt="" /> : <Icon name={itemIcon(item)} size={22} />}
+      </span>
       <div className="i-title">
         <h2>{itemLabel(item)}</h2>
         <p>{itemKindLine(item)}</p>
       </div>
-      <button type="button" className="btn" onClick={() => select(null)} aria-keyshortcuts="Escape" title="Back to the library (Esc)">
+      <button
+        type="button"
+        className="btn"
+        onClick={() => select(null)}
+        aria-keyshortcuts="Escape"
+        title="Back to the library (Esc)"
+      >
         Done
       </button>
     </header>
@@ -60,7 +90,8 @@ function LostWallNote({ item }: { item: DecorItem }) {
   return (
     <div className="lost-wall-note" role="status" data-lost-wall={wall}>
       <p>
-        <strong>Wall removed.</strong> This hangs on the {WALL_LABELS[wall]} wall, which this layout takes out. It stays here until you move it.
+        <strong>Wall removed.</strong> This hangs on the {WALL_LABELS[wall]} wall, which this layout takes out. It stays
+        here until you move it.
       </p>
       <button type="button" className="btn" onClick={() => relocate(item.id)}>
         <Icon name="move" size={14} /> Move to a wall
@@ -76,7 +107,12 @@ const InspectorActions = memo(function InspectorActions({ id, canRotate }: { id:
   return (
     <div className="i-foot">
       <div className="actions">
-        <button type="button" className="btn" onClick={() => relocate(id)} title="Pick it up and place it again with the next click">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => relocate(id)}
+          title="Pick it up and place it again with the next click"
+        >
           <Icon name="move" size={14} /> Move
         </button>
         <button type="button" className="btn" onClick={() => duplicate(id)} aria-keyshortcuts="Meta+D Control+D">
@@ -87,7 +123,8 @@ const InspectorActions = memo(function InspectorActions({ id, canRotate }: { id:
         </button>
       </div>
       <p className="note">
-        Drag it in the room to move it{canRotate && (
+        Drag it in the room to move it
+        {canRotate && (
           <>
             , <kbd>R</kbd> to rotate
           </>
@@ -128,15 +165,36 @@ function ArtworkControls({ item }: { item: ArtworkItem }) {
     <>
       <Section title="Print">
         <Field label="Size" value={`${cm(item.size.w)} × ${cm(item.size.h)} cm`}>
-          <Chips value={item.size.preset} options={[...SIZE_PRESETS.map((p) => ({ id: p.id as SizePreset, label: p.label })), { id: 'custom', label: 'Custom' }]} onChange={setPreset} />
+          <Chips
+            value={item.size.preset}
+            options={[
+              ...SIZE_PRESETS.map((p) => ({ id: p.id as SizePreset, label: p.label })),
+              { id: 'custom', label: 'Custom' },
+            ]}
+            onChange={setPreset}
+          />
         </Field>
         {item.size.preset === 'custom' && (
           <div className="grid-2">
             <Field label="Width">
-              <NumberInput name="width" value={cm(item.size.w)} min={5} max={200} unit="cm" onChange={(v) => set({ size: { ...item.size, w: v / 100 } })} />
+              <NumberInput
+                name="width"
+                value={cm(item.size.w)}
+                min={5}
+                max={200}
+                unit="cm"
+                onChange={(v) => set({ size: { ...item.size, w: v / 100 } })}
+              />
             </Field>
             <Field label="Height">
-              <NumberInput name="height" value={cm(item.size.h)} min={5} max={200} unit="cm" onChange={(v) => set({ size: { ...item.size, h: v / 100 } })} />
+              <NumberInput
+                name="height"
+                value={cm(item.size.h)}
+                min={5}
+                max={200}
+                unit="cm"
+                onChange={(v) => set({ size: { ...item.size, h: v / 100 } })}
+              />
             </Field>
           </div>
         )}
@@ -175,13 +233,24 @@ function ArtworkControls({ item }: { item: ArtworkItem }) {
           />
         </Field>
         {style.id !== 'none' && (
-          <Field label={style.id === 'canvas' ? 'Edge color' : 'Frame color'} value={colorName(item.frame.color, FRAME_COLORS)}>
-            <Swatches value={item.frame.color} colors={FRAME_COLORS} onChange={(color) => set({ frame: { ...item.frame, color } })} />
+          <Field
+            label={style.id === 'canvas' ? 'Edge color' : 'Frame color'}
+            value={colorName(item.frame.color, FRAME_COLORS)}
+          >
+            <Swatches
+              value={item.frame.color}
+              colors={FRAME_COLORS}
+              onChange={(color) => set({ frame: { ...item.frame, color } })}
+            />
           </Field>
         )}
         {allowsMat ? (
           <Field label="Mat (passe-partout)">
-            <Chips value={item.frame.mat} options={MAT_WIDTHS.map((m) => ({ id: m, label: m ? `${cm(m)} cm` : 'None' }))} onChange={(mat) => set({ frame: { ...item.frame, mat } })} />
+            <Chips
+              value={item.frame.mat}
+              options={MAT_WIDTHS.map((m) => ({ id: m, label: m ? `${cm(m)} cm` : 'None' }))}
+              onChange={(mat) => set({ frame: { ...item.frame, mat } })}
+            />
           </Field>
         ) : (
           <p className="note">{style.label} frames have no mat.</p>
@@ -189,7 +258,14 @@ function ArtworkControls({ item }: { item: ArtworkItem }) {
       </Section>
       <PositionSection item={item}>
         <Field label="Center height">
-          <NumberInput name="center height" value={cm(item.at[1])} min={20} max={250} unit="cm from floor" onChange={(v) => set({ at: [item.at[0], v / 100, item.at[2]] })} />
+          <NumberInput
+            name="center height"
+            value={cm(item.at[1])}
+            min={20}
+            max={250}
+            unit="cm from floor"
+            onChange={(v) => set({ at: [item.at[0], v / 100, item.at[2]] })}
+          />
         </Field>
         <p className="readout">
           Outer size {cm(ow)} × {cm(oh)} cm · top edge at {cm(item.at[1] + oh / 2)} cm
@@ -219,19 +295,34 @@ function PlantControls({ item }: { item: PlantItem }) {
           <SpeciesSelect item={item} onChange={(species) => set({ species })} />
         </Field>
         <Field label="Size" value={pct(item.scale)}>
-          <Slider value={item.scale} min={0.5} max={1.6} step={0.05} format={pct} onChange={(scale) => set({ scale })} />
+          <Slider
+            value={item.scale}
+            min={0.5}
+            max={1.6}
+            step={0.05}
+            format={pct}
+            onChange={(scale) => set({ scale })}
+          />
         </Field>
       </Section>
       {(hasClayPot || (ownPot && !isCollection)) && (
         <Section title="Pot">
           {hasClayPot && (
             <Field label="Clay pot size">
-              <Chips value={item.potSize ?? 'auto'} options={POT_SIZES} onChange={(potSize: PotSize) => set({ potSize })} />
+              <Chips
+                value={item.potSize ?? 'auto'}
+                options={POT_SIZES}
+                onChange={(potSize: PotSize) => set({ potSize })}
+              />
             </Field>
           )}
           {ownPot && !isCollection && (
             <Field label="Pot" value={colorName(potColor, potColors)}>
-              <Swatches value={potColor} colors={potColors} onChange={(c) => set({ pot: POTS.find((p) => p.color === c)?.id ?? item.pot })} />
+              <Swatches
+                value={potColor}
+                colors={potColors}
+                onChange={(c) => set({ pot: POTS.find((p) => p.color === c)?.id ?? item.pot })}
+              />
             </Field>
           )}
         </Section>
@@ -239,10 +330,24 @@ function PlantControls({ item }: { item: PlantItem }) {
       {isCollection && (
         <Section title="Collection">
           <Field label="Pots" value={item.count ?? 10}>
-            <Slider value={item.count ?? 10} min={2} max={30} step={1} format={(v) => `${v} pots`} onChange={(count) => set({ count })} />
+            <Slider
+              value={item.count ?? 10}
+              min={2}
+              max={30}
+              step={1}
+              format={(v) => `${v} pots`}
+              onChange={(count) => set({ count })}
+            />
           </Field>
           <Field label="Strip width" value={`${cm(item.spread ?? 0.9)} cm`}>
-            <Slider value={item.spread ?? 0.9} min={0.2} max={2.5} step={0.05} format={(v) => `${cm(v)} cm`} onChange={(spread) => set({ spread })} />
+            <Slider
+              value={item.spread ?? 0.9}
+              min={0.2}
+              max={2.5}
+              step={0.05}
+              format={(v) => `${cm(v)} cm`}
+              onChange={(spread) => set({ spread })}
+            />
           </Field>
           <button type="button" className="btn" onClick={() => set({ seed: Math.random().toString(36).slice(2, 8) })}>
             Shuffle plants
@@ -251,7 +356,14 @@ function PlantControls({ item }: { item: PlantItem }) {
       )}
       <PositionSection item={item}>
         <Field label="Rotation" value={deg(item.rotation)}>
-          <Slider value={item.rotation} min={0} max={360} step={5} format={deg} onChange={(rotation) => set({ rotation })} />
+          <Slider
+            value={item.rotation}
+            min={0}
+            max={360}
+            step={5}
+            format={deg}
+            onChange={(rotation) => set({ rotation })}
+          />
         </Field>
       </PositionSection>
     </>
@@ -264,7 +376,7 @@ function SpeciesSelect({ item, onChange }: { item: PlantItem; onChange: (s: Plan
   const options = (Object.keys(PLANTS) as PlantSpecies[]).filter((sp) => PLANTS[sp].mount === mount)
   const id = useFieldControlId()
   return (
-    <select id={id}className="select" value={item.species} onChange={(e) => onChange(e.target.value as PlantSpecies)}>
+    <select id={id} className="select" value={item.species} onChange={(e) => onChange(e.target.value as PlantSpecies)}>
       {options.map((sp) => (
         <option key={sp} value={sp}>
           {PLANTS[sp].label}
@@ -283,9 +395,20 @@ function PendantCord({ item, set }: { item: LampItem; set: (patch: Partial<LampI
   const fmt = (v: number) => `${cm(v)} cm`
   return (
     <>
-      <Switch label="Automatic height" checked={item.drop === undefined} onChange={(auto) => set({ drop: auto ? undefined : drop })} />
+      <Switch
+        label="Automatic height"
+        checked={item.drop === undefined}
+        onChange={(auto) => set({ drop: auto ? undefined : drop })}
+      />
       <Field label="Cord" value={`${fmt(drop)} · bottom at ${bottom.toFixed(2)} m`}>
-        <Slider value={drop} min={MIN_CORD} max={MAX_CORD} step={0.01} format={fmt} onChange={(v) => set({ drop: v })} />
+        <Slider
+          value={drop}
+          min={MIN_CORD}
+          max={MAX_CORD}
+          step={0.01}
+          format={fmt}
+          onChange={(v) => set({ drop: v })}
+        />
       </Field>
     </>
   )
@@ -301,10 +424,21 @@ function LampControls({ item }: { item: LampItem }) {
       <Section title="Light">
         <Switch label="Light on" checked={item.on} onChange={(on) => set({ on })} />
         <Field label="Brightness" value={pct(item.brightness)}>
-          <Slider value={item.brightness} min={0.1} max={2} step={0.05} format={pct} onChange={(brightness) => set({ brightness })} />
+          <Slider
+            value={item.brightness}
+            min={0.1}
+            max={2}
+            step={0.05}
+            format={pct}
+            onChange={(brightness) => set({ brightness })}
+          />
         </Field>
         <Field label="Warmth">
-          <Chips value={item.warmth} options={WARMTH.map((w) => ({ id: w.id, label: w.label }))} onChange={(warmth) => set({ warmth })} />
+          <Chips
+            value={item.warmth}
+            options={WARMTH.map((w) => ({ id: w.id, label: w.label }))}
+            onChange={(warmth) => set({ warmth })}
+          />
         </Field>
       </Section>
       <Section title="Finish">
@@ -313,7 +447,14 @@ function LampControls({ item }: { item: LampItem }) {
         </Field>
         {item.type === 'string' && (
           <Field label="Length" value={`${(item.length ?? 2.4).toFixed(1)} m`}>
-            <Slider value={item.length ?? 2.4} min={0.8} max={4} step={0.1} format={(v) => `${v.toFixed(1)} m`} onChange={(length) => set({ length })} />
+            <Slider
+              value={item.length ?? 2.4}
+              min={0.8}
+              max={4}
+              step={0.1}
+              format={(v) => `${v.toFixed(1)} m`}
+              onChange={(length) => set({ length })}
+            />
           </Field>
         )}
         {isPendant(item.type) && <PendantCord item={item} set={set} />}
@@ -321,11 +462,25 @@ function LampControls({ item }: { item: LampItem }) {
       <PositionSection item={item}>
         {mount === 'wall' ? (
           <Field label="Height">
-            <NumberInput name="height" value={cm(item.at[1])} min={20} max={260} unit="cm from floor" onChange={(v) => set({ at: [item.at[0], v / 100, item.at[2]] })} />
+            <NumberInput
+              name="height"
+              value={cm(item.at[1])}
+              min={20}
+              max={260}
+              unit="cm from floor"
+              onChange={(v) => set({ at: [item.at[0], v / 100, item.at[2]] })}
+            />
           </Field>
         ) : (
           <Field label="Rotation" value={deg(item.rotation)}>
-            <Slider value={item.rotation} min={0} max={360} step={5} format={deg} onChange={(rotation) => set({ rotation })} />
+            <Slider
+              value={item.rotation}
+              min={0}
+              max={360}
+              step={5}
+              format={deg}
+              onChange={(rotation) => set({ rotation })}
+            />
           </Field>
         )}
       </PositionSection>
@@ -351,7 +506,9 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
   }
   const isDesk = item.type === 'standingDesk'
   // A desk's height moves with sit/stand, so its presets only fix width and depth.
-  const preset = spec.presets?.find((p) => p.size.every((v, i) => (i === 1 && isDesk) || Math.abs(v - item.size[i]) < 0.005))
+  const preset = spec.presets?.find((p) =>
+    p.size.every((v, i) => (i === 1 && isDesk) || Math.abs(v - item.size[i]) < 0.005),
+  )
   const hasSize = !!spec.presets || spec.editable.length > 0 || isDesk
   const finishes = spec.uses
 
@@ -363,7 +520,10 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
             <Field label="Preset">
               <Chips
                 value={preset?.label ?? 'custom'}
-                options={[...spec.presets.map((p) => ({ id: p.label, label: p.label })), ...(preset ? [] : [{ id: 'custom', label: 'Custom' }])]}
+                options={[
+                  ...spec.presets.map((p) => ({ id: p.label, label: p.label })),
+                  ...(preset ? [] : [{ id: 'custom', label: 'Custom' }]),
+                ]}
                 onChange={(label) => {
                   const p = spec.presets!.find((x) => x.label === label)
                   // Keep the desk's current height when switching top sizes.
@@ -376,17 +536,38 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
             <div className="grid-2">
               {spec.editable.includes('w') && (
                 <Field label="Width">
-                  <NumberInput name="width" value={cm(w)} min={10} max={400} unit="cm" onChange={(v) => setSize(0, v / 100)} />
+                  <NumberInput
+                    name="width"
+                    value={cm(w)}
+                    min={10}
+                    max={400}
+                    unit="cm"
+                    onChange={(v) => setSize(0, v / 100)}
+                  />
                 </Field>
               )}
               {spec.editable.includes('d') && (
                 <Field label="Depth">
-                  <NumberInput name="depth" value={cm(d)} min={2} max={300} unit="cm" onChange={(v) => setSize(2, v / 100)} />
+                  <NumberInput
+                    name="depth"
+                    value={cm(d)}
+                    min={2}
+                    max={300}
+                    unit="cm"
+                    onChange={(v) => setSize(2, v / 100)}
+                  />
                 </Field>
               )}
               {spec.editable.includes('h') && (
                 <Field label={item.type === 'hangingRack' ? 'Drop' : 'Height'}>
-                  <NumberInput name={item.type === 'hangingRack' ? 'drop' : 'height'} value={cm(h)} min={1} max={260} unit="cm" onChange={(v) => setSize(1, v / 100)} />
+                  <NumberInput
+                    name={item.type === 'hangingRack' ? 'drop' : 'height'}
+                    value={cm(h)}
+                    min={1}
+                    max={260}
+                    unit="cm"
+                    onChange={(v) => setSize(1, v / 100)}
+                  />
                 </Field>
               )}
             </div>
@@ -401,7 +582,14 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
                 ]}
                 onChange={(v) => setSize(1, v === 'sit' ? SIT : STAND)}
               />
-              <Slider value={h} min={0.62} max={1.27} step={0.01} format={(v) => `${cm(v)} cm`} onChange={(v) => setSize(1, v)} />
+              <Slider
+                value={h}
+                min={0.62}
+                max={1.27}
+                step={0.01}
+                format={(v) => `${cm(v)} cm`}
+                onChange={(v) => setSize(1, v)}
+              />
             </Field>
           )}
         </Section>
@@ -409,18 +597,36 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
       {finishes.length > 0 && (
         <Section title="Finish">
           {finishes.includes('body') && (
-            <Field label={spec.bodyColors ? 'Color' : 'Body'} value={colorName(item.finish.body, spec.bodyColors ?? BODY_FINISHES)}>
-              <Swatches value={item.finish.body} colors={spec.bodyColors ?? BODY_FINISHES} onChange={(body) => set({ finish: { ...item.finish, body } })} />
+            <Field
+              label={spec.bodyColors ? 'Color' : 'Body'}
+              value={colorName(item.finish.body, spec.bodyColors ?? BODY_FINISHES)}
+            >
+              <Swatches
+                value={item.finish.body}
+                colors={spec.bodyColors ?? BODY_FINISHES}
+                onChange={(body) => set({ finish: { ...item.finish, body } })}
+              />
             </Field>
           )}
           {finishes.includes('metal') && (
             <Field label="Metal" value={colorName(item.finish.metal, METAL_FINISHES)}>
-              <Swatches value={item.finish.metal} colors={METAL_FINISHES} onChange={(metal) => set({ finish: { ...item.finish, metal } })} />
+              <Swatches
+                value={item.finish.metal}
+                colors={METAL_FINISHES}
+                onChange={(metal) => set({ finish: { ...item.finish, metal } })}
+              />
             </Field>
           )}
           {finishes.includes('fabric') && (
-            <Field label={item.type === 'butterflyChair' ? 'Sling' : 'Fabric'} value={colorName(item.finish.fabric, FABRIC_FINISHES)}>
-              <Swatches value={item.finish.fabric} colors={FABRIC_FINISHES} onChange={(fabric) => set({ finish: { ...item.finish, fabric } })} />
+            <Field
+              label={item.type === 'butterflyChair' ? 'Sling' : 'Fabric'}
+              value={colorName(item.finish.fabric, FABRIC_FINISHES)}
+            >
+              <Swatches
+                value={item.finish.fabric}
+                colors={FABRIC_FINISHES}
+                onChange={(fabric) => set({ finish: { ...item.finish, fabric } })}
+              />
             </Field>
           )}
         </Section>
@@ -430,27 +636,38 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
           {spec.optionSpecs
             .filter((o) => !o.when || (item.options?.[o.when[0]] ?? spec.options[o.when[0]]) === o.when[1])
             .map((o) => (
-            <OptionControl
-              key={o.key}
-              spec={o}
-              // Pieces saved before an option existed read its default.
-              value={item.options?.[o.key] ?? spec.options[o.key]}
-              onChange={(v) => {
-                const options = { ...spec.options, ...item.options, [o.key]: v }
-                set(spec.sizeFor ? { options, size: spec.sizeFor(options, item.size) } : { options })
-              }}
-            />
-          ))}
+              <OptionControl
+                key={o.key}
+                spec={o}
+                // Pieces saved before an option existed read its default.
+                value={item.options?.[o.key] ?? spec.options[o.key]}
+                onChange={(v) => {
+                  const options = { ...spec.options, ...item.options, [o.key]: v }
+                  set(spec.sizeFor ? { options, size: spec.sizeFor(options, item.size) } : { options })
+                }}
+              />
+            ))}
         </Section>
       )}
       <PositionSection item={item}>
         {mount === 'wall' ? (
           <Field label="Bottom edge">
-            <NumberInput name="bottom edge height" value={cm(item.at[1])} min={0} max={250} unit="cm from floor" onChange={(v) => set({ at: [item.at[0], v / 100, item.at[2]] })} />
+            <NumberInput
+              name="bottom edge height"
+              value={cm(item.at[1])}
+              min={0}
+              max={250}
+              unit="cm from floor"
+              onChange={(v) => set({ at: [item.at[0], v / 100, item.at[2]] })}
+            />
           </Field>
         ) : (
           <Field label="Facing">
-            <Chips value={((Math.round(item.rotation) % 360) + 360) % 360} options={[0, 90, 180, 270].map((r) => ({ id: r, label: `${r}°` }))} onChange={(rotation) => set({ rotation })} />
+            <Chips
+              value={((Math.round(item.rotation) % 360) + 360) % 360}
+              options={[0, 90, 180, 270].map((r) => ({ id: r, label: `${r}°` }))}
+              onChange={(rotation) => set({ rotation })}
+            />
           </Field>
         )}
       </PositionSection>
@@ -458,7 +675,15 @@ function FurnitureControls({ item }: { item: FurnitureItem }) {
   )
 }
 
-function OptionControl({ spec, value, onChange }: { spec: OptionSpec; value: FurnitureItem['options'][string]; onChange: (v: FurnitureItem['options'][string]) => void }) {
+function OptionControl({
+  spec,
+  value,
+  onChange,
+}: {
+  spec: OptionSpec
+  value: FurnitureItem['options'][string]
+  onChange: (v: FurnitureItem['options'][string]) => void
+}) {
   if (spec.kind === 'text') return <TextOption spec={spec} value={String(value ?? '')} onChange={onChange} />
   if (spec.kind === 'toggle') return <Switch label={spec.label} checked={value !== false} onChange={onChange} />
   if (spec.kind === 'chips')
@@ -470,13 +695,28 @@ function OptionControl({ spec, value, onChange }: { spec: OptionSpec; value: Fur
   const unit = spec.unit ? ` ${spec.unit}` : ''
   return (
     <Field label={spec.label} value={`${value}${unit}`}>
-      <Slider value={Number(value)} min={spec.min} max={spec.max} step={spec.step} format={(v) => `${v}${unit}`} onChange={onChange} />
+      <Slider
+        value={Number(value)}
+        min={spec.min}
+        max={spec.max}
+        step={spec.step}
+        format={(v) => `${v}${unit}`}
+        onChange={onChange}
+      />
     </Field>
   )
 }
 
 /** A free-text option (a link): applies on Enter or when the field loses focus. */
-function TextOption({ spec, value, onChange }: { spec: Extract<OptionSpec, { kind: 'text' }>; value: string; onChange: (v: string) => void }) {
+function TextOption({
+  spec,
+  value,
+  onChange,
+}: {
+  spec: Extract<OptionSpec, { kind: 'text' }>
+  value: string
+  onChange: (v: string) => void
+}) {
   const [draft, setDraft] = useState<string | null>(null)
   const commit = () => {
     if (draft !== null && draft.trim() !== value) onChange(draft.trim())
@@ -485,7 +725,12 @@ function TextOption({ spec, value, onChange }: { spec: Extract<OptionSpec, { kin
   const shown = draft ?? value
   const failure = useImageFailure(value, spec.key === 'image' && draft === null)
   const bad =
-    shown.trim() !== '' && (spec.key === 'youtube' ? !parseYouTube(shown) : spec.key === 'image' ? !/^(https?:\/\/|\/)/i.test(shown.trim()) : false)
+    shown.trim() !== '' &&
+    (spec.key === 'youtube'
+      ? !parseYouTube(shown)
+      : spec.key === 'image'
+        ? !/^(https?:\/\/|\/)/i.test(shown.trim())
+        : false)
   return (
     <Field label={spec.label}>
       <TextOptionInput
@@ -497,9 +742,15 @@ function TextOption({ spec, value, onChange }: { spec: Extract<OptionSpec, { kin
         onCancel={() => setDraft(null)}
       />
       {bad ? (
-        <p className="hint-text warn-text">{spec.key === 'youtube' ? 'That doesn’t look like a YouTube link.' : 'Use a link starting with https:// (or /artwork/…).'}</p>
+        <p className="hint-text warn-text">
+          {spec.key === 'youtube'
+            ? 'That doesn’t look like a YouTube link.'
+            : 'Use a link starting with https:// (or /artwork/…).'}
+        </p>
       ) : spec.key === 'image' && failure ? (
-        <p className="hint-text warn-text">Couldn’t load that image: {failure}. The screen keeps its default picture.</p>
+        <p className="hint-text warn-text">
+          Couldn’t load that image: {failure}. The screen keeps its default picture.
+        </p>
       ) : (
         spec.hint && <p className="hint-text">{spec.hint}</p>
       )}
@@ -528,7 +779,14 @@ function useImageFailure(link: string, active: boolean): string | null {
   return failure && failure.src === src ? failure.error : null
 }
 
-function TextOptionInput(p: { value: string; placeholder?: string; invalid: boolean; onChange: (v: string) => void; onCommit: () => void; onCancel: () => void }) {
+function TextOptionInput(p: {
+  value: string
+  placeholder?: string
+  invalid: boolean
+  onChange: (v: string) => void
+  onCommit: () => void
+  onCancel: () => void
+}) {
   const id = useFieldControlId()
   return (
     <input

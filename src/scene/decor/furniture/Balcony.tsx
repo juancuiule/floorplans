@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from 'react'
 import type { FurnitureItem, PlantSpecies } from '../../../model/decor'
-import { MATS, potMaterial } from '../Plant'
+import { MATS, potMaterial } from '../plantMaterials'
 import { buildPlant, POT_SIZES, seeded } from '../plantGeometry'
-import { B, cushionGeometry, mat, Pillow, Rod } from './common'
+import { B, Pillow, Rod } from './common'
+import { mat } from './furnitureMaterials'
+import { cushionGeometry } from './softGeometry'
 
 const PILLOWS = ['#b3664b', '#d8b24a', '#9aab8e', '#e8e2d3']
 
@@ -20,7 +22,14 @@ function Pallet({ w, d, ph, y, m }: { w: number; d: number; ph: number; y: numbe
       ))}
       {/* blocks */}
       {[-1, 0, 1].flatMap((i) =>
-        [-1, 0, 1].map((k) => <B key={`b${i}${k}`} s={[0.12, blockH, bw]} p={[i * (w / 2 - 0.06), bt + blockH / 2, k * (d / 2 - bw / 2)]} m={m} />),
+        [-1, 0, 1].map((k) => (
+          <B
+            key={`b${i}${k}`}
+            s={[0.12, blockH, bw]}
+            p={[i * (w / 2 - 0.06), bt + blockH / 2, k * (d / 2 - bw / 2)]}
+            m={m}
+          />
+        )),
       )}
       {/* stringers across the blocks */}
       {[-1, 0, 1].map((i) => (
@@ -28,7 +37,12 @@ function Pallet({ w, d, ph, y, m }: { w: number; d: number; ph: number; y: numbe
       ))}
       {/* deck boards with gaps */}
       {Array.from({ length: boards }, (_, k) => (
-        <B key={`d${k}`} s={[w, bt, bw + 0.02]} p={[0, ph - bt / 2, -d / 2 + (bw + 0.02) / 2 + (k * (d - bw - 0.02)) / (boards - 1)]} m={m} />
+        <B
+          key={`d${k}`}
+          s={[w, bt, bw + 0.02]}
+          p={[0, ph - bt / 2, -d / 2 + (bw + 0.02) / 2 + (k * (d - bw - 0.02)) / (boards - 1)]}
+          m={m}
+        />
       ))}
     </group>
   )
@@ -54,7 +68,16 @@ export function BalconyBench({ item }: { item: FurnitureItem }) {
     const slats = Math.max(4, Math.round(d / 0.09))
     base = (
       <group>
-        {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <B key={`${sx}${sz}`} s={[leg, baseH - 0.02, leg]} p={[sx * (w / 2 - leg / 2), (baseH - 0.02) / 2, sz * (d / 2 - leg / 2)]} m={wood} />))}
+        {[-1, 1].flatMap((sx) =>
+          [-1, 1].map((sz) => (
+            <B
+              key={`${sx}${sz}`}
+              s={[leg, baseH - 0.02, leg]}
+              p={[sx * (w / 2 - leg / 2), (baseH - 0.02) / 2, sz * (d / 2 - leg / 2)]}
+              m={wood}
+            />
+          )),
+        )}
         {/* apron */}
         {[-1, 1].map((sz) => (
           <B key={`a${sz}`} s={[w - 2 * leg, 0.08, 0.022]} p={[0, baseH - 0.06, sz * (d / 2 - 0.011)]} m={wood} />
@@ -64,7 +87,12 @@ export function BalconyBench({ item }: { item: FurnitureItem }) {
         ))}
         {/* slats running the length */}
         {Array.from({ length: slats }, (_, k) => (
-          <B key={`s${k}`} s={[w, 0.02, d / slats - 0.015]} p={[0, baseH - 0.01, -d / 2 + (k + 0.5) * (d / slats)]} m={wood} />
+          <B
+            key={`s${k}`}
+            s={[w, 0.02, d / slats - 0.015]}
+            p={[0, baseH - 0.01, -d / 2 + (k + 0.5) * (d / slats)]}
+            m={wood}
+          />
         ))}
         {/* low stretcher */}
         <B s={[w - 2 * leg, 0.03, 0.03]} p={[0, 0.1, 0]} m={wood} />
@@ -74,11 +102,25 @@ export function BalconyBench({ item }: { item: FurnitureItem }) {
   return (
     <group>
       {base}
-      <mesh geometry={cushionGeometry(w - 0.02, cushionH, d - 0.02, 0.04)} position={[0, baseH, 0]} material={fabric} castShadow receiveShadow />
+      <mesh
+        geometry={cushionGeometry(w - 0.02, cushionH, d - 0.02, 0.04)}
+        position={[0, baseH, 0]}
+        material={fabric}
+        castShadow
+        receiveShadow
+      />
       {Array.from({ length: pillows }, (_, i) => {
         const x = -((pillows - 1) * (pw + 0.03)) / 2 + i * (pw + 0.03)
         const ph = Math.min(0.45, pw * 0.95)
-        return <Pillow key={i} s={[pw, ph, 0.16]} p={[x, baseH + cushionH + ph / 2 - 0.01, -d / 2 + 0.1]} r={[-0.22, (i - (pillows - 1) / 2) * 0.06, (i % 2 ? 1 : -1) * 0.03]} m={mat(PILLOWS[i % PILLOWS.length], 'fabric')} />
+        return (
+          <Pillow
+            key={i}
+            s={[pw, ph, 0.16]}
+            p={[x, baseH + cushionH + ph / 2 - 0.01, -d / 2 + 0.1]}
+            r={[-0.22, (i - (pillows - 1) / 2) * 0.06, (i % 2 ? 1 : -1) * 0.03]}
+            m={mat(PILLOWS[i % PILLOWS.length], 'fabric')}
+          />
+        )
       })}
     </group>
   )
@@ -147,7 +189,13 @@ export function PlanterWall({ item }: { item: FurnitureItem }) {
             <B s={[b.bw - 0.004, shell, d]} p={[0, shell / 2, 0]} m={concrete} />
             <B s={[b.bw - 0.004, shell, d]} p={[0, bh - shell / 2, 0]} m={concrete} />
             {Array.from({ length: b.cells + 1 }, (_, c) => (
-              <B key={c} s={[shell, inner, d]} p={[-b.bw / 2 + shell / 2 + c * (cw + shell), bh / 2, 0]} m={concrete} edges={c === 0 || c === b.cells} />
+              <B
+                key={c}
+                s={[shell, inner, d]}
+                p={[-b.bw / 2 + shell / 2 + c * (cw + shell), bh / 2, 0]}
+                m={concrete}
+                edges={c === 0 || c === b.cells}
+              />
             ))}
           </group>
         )
@@ -155,7 +203,12 @@ export function PlanterWall({ item }: { item: FurnitureItem }) {
       {plants.map((p, i) => (
         <group key={i} position={[p.x, p.y + shell + 0.004, 0.02]} scale={p.scale} rotation={[0, i * 1.7, 0]}>
           {p.model.parts.map((q) => (
-            <mesh key={q.mat} geometry={q.geometry} material={q.mat === 'pot' ? potMaterial('clay') : MATS[q.mat]} castShadow />
+            <mesh
+              key={q.mat}
+              geometry={q.geometry}
+              material={q.mat === 'pot' ? potMaterial('clay') : MATS[q.mat]}
+              castShadow
+            />
           ))}
         </group>
       ))}
@@ -187,20 +240,39 @@ export function RailTable({ item }: { item: FurnitureItem }) {
           <B s={[w, leafT, d]} p={[0, h + leafT / 2, bz + d / 2 - 0.02]} m={wood} />
           {[-1, 1].map((sx) => (
             <group key={sx}>
-              <Rod a={[sx * bx, 0.04, 0.008]} b={[sx * bx, h - 0.004, bz + d * 0.62]} radius={0.007} m={steel} segments={8} />
+              <Rod
+                a={[sx * bx, 0.04, 0.008]}
+                b={[sx * bx, h - 0.004, bz + d * 0.62]}
+                radius={0.007}
+                m={steel}
+                segments={8}
+              />
               <B s={[0.025, 0.01, d * 0.62]} p={[sx * bx, h - 0.005, bz + (d * 0.62) / 2]} m={steel} edges={false} />
             </group>
           ))}
           {/* hinges along the top of the batten */}
           {[-1, 1].map((sx) => (
-            <B key={`h${sx}`} s={[0.06, 0.004, 0.04]} p={[sx * (w / 2 - 0.12), h + 0.002, bz + 0.005]} m={steel} edges={false} />
+            <B
+              key={`h${sx}`}
+              s={[0.06, 0.004, 0.04]}
+              p={[sx * (w / 2 - 0.12), h + 0.002, bz + 0.005]}
+              m={steel}
+              edges={false}
+            />
           ))}
         </group>
       ) : (
         <group>
           <B s={[w, d, leafT]} p={[0, h - d / 2, bz + leafT / 2 + 0.004]} m={wood} />
           {[-1, 1].map((sx) => (
-            <Rod key={sx} a={[sx * bx, 0.04, 0.008]} b={[sx * bx, h - 0.1, 0.012]} radius={0.007} m={steel} segments={8} />
+            <Rod
+              key={sx}
+              a={[sx * bx, 0.04, 0.008]}
+              b={[sx * bx, h - 0.1, 0.012]}
+              radius={0.007}
+              m={steel}
+              segments={8}
+            />
           ))}
         </group>
       )}
