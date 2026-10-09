@@ -1,20 +1,21 @@
 import path from 'node:path'
 import type { Plugin } from 'vite'
 import { slugOfFileName } from '../src/model/layoutNames.ts'
-import { createApi } from './api.ts'
-import type { SpaceStore } from './storage.ts'
+import type { createApi } from './node.ts'
+
+type Handler = Awaited<ReturnType<typeof createApi>>
 
 /**
  * Mounts the API on the Vite dev server, and tells open tabs when a layout file
  * changes on disk, so a hand edit (or an agent's) shows up live:
  * 'decor:changed' { space, plan, file } and 'layouts:changed' { space, plan }.
  */
-export function devApi(store: SpaceStore): Plugin {
+export function devApi(api: Handler, dataDir: string): Plugin {
   return {
     name: 'floorplan-api',
     apply: 'serve',
     configureServer(server) {
-      const spaces = path.join(store.root, 'spaces')
+      const spaces = path.join(dataDir, 'spaces')
       server.watcher.add(spaces)
       /** <space>/layouts/<plan>/<file> of a layout file, or null for any other file. */
       const layoutOf = (file: string) => {
@@ -34,8 +35,7 @@ export function devApi(store: SpaceStore): Plugin {
           const at = layoutOf(file)
           if (at) server.ws.send({ type: 'custom', event: 'layouts:changed', data: { space: at.space, plan: at.plan } })
         })
-      const api = createApi(store)
-      server.middlewares.use((req, res, next) => void api(req, res, next))
+      server.middlewares.use((req, res, next) => api(req, res, next))
     },
   }
 }
