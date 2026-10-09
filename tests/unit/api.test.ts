@@ -5,9 +5,14 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createApi } from '../../server/api'
+import { NodeFileSystem, NodePath } from '@effect/platform-node'
+import { Effect, Layer, ManagedRuntime } from 'effect'
 import { devApi } from '../../server/devServer'
-import { SpaceStore } from '../../server/storage'
+import { createApi } from '../../server/node'
+import type { Handler } from '../../server/node'
+import { ServerConfig } from '../../server/config'
+import { MAX_UPLOAD } from '../../server/library'
+import { Spaces } from '../../server/storage'
 import { slugify } from '../../src/model/layoutNames'
 
 // The API (server/api.ts) on a real http server over a temporary data folder,
@@ -17,12 +22,24 @@ import { slugify } from '../../src/model/layoutNames'
 let root: string
 let base: string
 let server: http.Server
-let store: SpaceStore
+let api: Handler
+let store: Spaces['Service']
+let run: <A, E>(eff: Effect.Effect<A, E>) => Promise<A>
 
 beforeAll(async () => {
   root = mkdtempSync(path.join(tmpdir(), 'floorplan-api-'))
-  store = new SpaceStore(path.join(root, 'data'), path.resolve('examples'))
-  const api = createApi(store)
+  const dataDir = path.join(root, 'data')
+  const templatesDir = path.resolve('examples')
+  const rt = ManagedRuntime.make(
+    Spaces.layer.pipe(
+      Layer.provideMerge(
+        Layer.mergeAll(NodeFileSystem.layer, NodePath.layer, ServerConfig.layerFromValues({ dataDir, templatesDir })),
+      ),
+    ),
+  )
+  run = (eff) => rt.runPromise(eff)
+  store = rt.runSync(Spaces)
+  api = await createApi({ dataDir, templatesDir })
   server = http.createServer((req, res) =>
     api(req, res, () => {
       res.statusCode = 418
@@ -40,8 +57,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await fs.rm(store.root, { recursive: true, force: true })
-  await store.createSpace('Test', 's1')
-  expect(await store.createPlan('s1', { template: 'loft', name: 'Loft' })).toBe('loft')
+  await run(store.createSpace('Test', 's1'))
+  expect(await run(store.createPlan('s1', { template: 'loft', name: 'Loft' }))).toBe('loft')
   await fs.rm(store.layoutsDir('s1', 'loft'), { recursive: true, force: true })
 })
 
@@ -53,7 +70,11 @@ const writeLayout = async (slug: string | null, body: unknown) => {
   await fs.mkdir(data(), { recursive: true })
   await fs.writeFile(file(slug), JSON.stringify(body))
 }
-const json = (body: unknown, method = 'POST'): RequestInit => ({ method, body: JSON.stringify(body) })
+const json = (body: unknown, method = 'POST'): RequestInit => ({
+  method,
+  body: JSON.stringify(body),
+  headers: { 'Content-Type': 'application/json' },
+})
 const plant = { kind: 'plant', id: 'p1', species: 'monstera', pot: 'ceramic', at: [4, 0, 1], rotation: 0, scale: 1 }
 
 describe('routing', () => {
@@ -110,7 +131,7 @@ describe('spaces and plans', () => {
     expect(layout.items.length).toBeGreaterThan(0)
     expect(layout.items.some((i) => i.kind === 'artwork')).toBe(false)
     expect(layout.plan).toBeUndefined()
-    await expect(fs.readdir(store.artworkDir('s1'))).rejects.toThrow()
+    await expect(fs.readdir(store.libraryDir('s1', 'artwork'))).rejects.toThrow()
   })
 
   it('makes a plan from a posted plan, checks it, and gives repeated names their own id', async () => {
@@ -120,7 +141,7 @@ describe('spaces and plans', () => {
     const broken = { ...loft, shell: { ...loft.shell, walls: 'no' } }
     const bad = await fetch(`${base}/api/spaces/s1/plans`, json({ plan: broken, name: 'Broken' }))
     expect(bad.status).toBe(400)
-    expect(((await bad.json()) as { error: string }).error).toMatch(/^Not a valid plan: shell\.walls/)
+    expect(((await bad.json()) as { message: string }).message).toMatch(/^Not a valid plan: shell\.walls/)
     const plans = (await (await fetch(`${base}/api/spaces/s1`)).json()) as { plans: { id: string }[] }
     expect(plans.plans.map((p) => p.id).sort()).toEqual(['loft', 'loft-2'])
   })
@@ -141,7 +162,7 @@ describe('spaces and plans', () => {
   })
 
   it('keeps spaces apart: one space cannot read another one’s plans, layouts or artwork', async () => {
-    await store.createSpace('Other', 's2')
+    await run(store.createSpace('Other', 's2'))
     await writeLayout(null, { version: 1, items: [plant] })
     expect((await fetch(`${base}/api/spaces/s2/plans/loft`)).status).toBe(404)
     expect((await fetch(`${base}/api/spaces/s2/plans/loft/decor`)).status).toBe(404)
@@ -152,9 +173,13 @@ describe('spaces and plans', () => {
 })
 
 describe('artwork', () => {
-  const art = () => store.artworkDir('s1')
+  const art = () => store.libraryDir('s1', 'artwork')
   const upload = (name: string, body: string | Uint8Array<ArrayBuffer> = 'img') =>
-    fetch(`${base}/api/spaces/s1/artwork?name=${encodeURIComponent(name)}`, { method: 'POST', body })
+    fetch(`${base}/api/spaces/s1/artwork?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      body,
+      headers: { 'Content-Type': 'application/octet-stream' },
+    })
 
   it('lists only images, in natural order, with their URLs', async () => {
     expect(await (await fetch(`${base}/api/spaces/s1/artwork`)).json()).toEqual([])
@@ -164,6 +189,13 @@ describe('artwork', () => {
     const list = (await (await fetch(`${base}/api/spaces/s1/artwork`)).json()) as { name: string; url: string }[]
     expect(list.map((x) => x.name)).toEqual(['b.WEBP', 'img 2.jpg', 'img 10.png'])
     expect(list[2].url).toBe('/api/spaces/s1/artwork/img%2010.png')
+  })
+
+  it('refuses an upload over the size limit, and stores nothing', async () => {
+    const res = await upload('huge.png', new Uint8Array(MAX_UPLOAD + 1))
+    expect(res.status).toBe(413)
+    expect(await res.json()).toMatchObject({ message: 'Upload too large' })
+    expect(await fs.readdir(art()).catch(() => [])).toEqual([])
   })
 
   it('stores an upload byte for byte and serves it back', async () => {
@@ -196,7 +228,11 @@ describe('artwork', () => {
 
 describe('reference images', () => {
   it('keeps floor plan images apart from the artwork library', async () => {
-    const res = await fetch(`${base}/api/spaces/s1/references?name=plan.png`, { method: 'POST', body: 'img' })
+    const res = await fetch(`${base}/api/spaces/s1/references?name=plan.png`, {
+      method: 'POST',
+      body: 'img',
+      headers: { 'Content-Type': 'application/octet-stream' },
+    })
     expect(await res.json()).toEqual({ name: 'plan.png', url: '/api/spaces/s1/references/plan.png' })
     expect((await fetch(`${base}/api/spaces/s1/references/plan.png`)).status).toBe(200)
     expect(await (await fetch(`${base}/api/spaces/s1/artwork`)).json()).toEqual([])
@@ -228,7 +264,15 @@ describe('layout files (decor)', () => {
       expect((await fetch(`${P()}/decor?${q}`, json(doc, 'PUT'))).status, name).toBe(400)
     }
     expect((await fetch(`${P()}/decor?file=unit`, json({ version: 1 }, 'PUT'))).status).toBe(400)
-    expect((await fetch(`${P()}/decor?file=unit`, { method: 'PUT', body: '{nope' })).status).toBe(400)
+    expect(
+      (
+        await fetch(`${P()}/decor?file=unit`, {
+          method: 'PUT',
+          body: '{nope',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      ).status,
+    ).toBe(400)
     expect(await fs.readdir(data()).catch(() => [])).toEqual([])
   })
 })
@@ -308,13 +352,13 @@ describe('layouts menu', () => {
 
 describe('importing a workspace', () => {
   it('copies plans, sorts layouts into their plans, and points artwork links at the new space', async () => {
-    const id = await store.importWorkspace(path.resolve('examples/monoambiente'), { id: 'mine' })
-    const space = await store.space(id)
+    const id = await run(store.importWorkspace(path.resolve('examples/monoambiente'), { id: 'mine' }))
+    const space = await run(store.space(id))
     expect(space.plans.map((p) => p.id)).toEqual(['monoambiente'])
     const main = await fs.readFile(path.join(store.layoutsDir('mine', 'monoambiente'), 'decor.json'), 'utf8')
     expect(main).toContain('"/api/spaces/mine/artwork/')
     expect(main).not.toContain('"/artwork/')
-    expect((await fs.readdir(store.artworkDir('mine'))).length).toBeGreaterThan(0)
+    expect((await fs.readdir(store.libraryDir('mine', 'artwork'))).length).toBeGreaterThan(0)
   })
 })
 
@@ -327,7 +371,7 @@ describe('the dev server', () => {
       ws: { send: (m: unknown) => sent.push(m) },
       middlewares: { use: () => {} },
     }
-    ;(devApi(store).configureServer as (s: unknown) => void)(fake)
+    ;(devApi(api, path.join(root, 'data')).configureServer as (s: unknown) => void)(fake)
     onChange!(path.join(data(), 'decor.json'))
     onChange!(path.join(data(), 'decor.e2e.json'))
     onChange!(path.join(data(), 'notes.json'))

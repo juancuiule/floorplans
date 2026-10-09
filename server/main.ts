@@ -1,46 +1,57 @@
-import { existsSync, promises as fs } from 'node:fs'
-import http from 'node:http'
-import path from 'node:path'
-import { createApi } from './api.ts'
-import { SpaceStore } from './storage.ts'
+import { createServer } from 'node:http'
+import { NodeHttpServer, NodeRuntime } from '@effect/platform-node'
+import { Effect, FileSystem, Layer, Scope } from 'effect'
+import { HttpServerRequest, HttpServerResponse, HttpStaticServer } from 'effect/http'
+import { ServerConfig } from './config.ts'
+import { apiHandler, PlatformLive, ServicesLive } from './node.ts'
 
-// The production server: the built app (pnpm build) and the API, in one process.
+// The production server: the API under /api/* and the built app (pnpm build),
+// in one process.
 //
-//   pnpm build && pnpm start      PORT (default 8080), FLOORPLAN_DATA (default storage)
+//   pnpm build && pnpm start      PORT (default 8080), HOST, FLOORPLAN_DATA (default storage)
 
-const root = process.cwd()
-const dist = path.join(root, 'dist')
-const store = new SpaceStore(path.resolve(root, process.env.FLOORPLAN_DATA ?? 'storage'), path.join(root, 'examples'))
-const api = createApi(store)
-const port = Number(process.env.PORT ?? 8080)
+const program = Effect.gen(function* () {
+  const config = yield* ServerConfig
+  const fs = yield* FileSystem.FileSystem
+  if (!(yield* fs.exists(`${config.distDir}/index.html`)))
+    return yield* Effect.die(new Error('No build in dist/: run pnpm build first.'))
 
-const TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.json': 'application/json',
-}
+  // The scope lives for the process: it tracks in-flight requests.
+  const scope = yield* Scope.make()
+  const api = yield* apiHandler
 
-if (!existsSync(path.join(dist, 'index.html'))) {
-  console.error('No build in dist/: run pnpm build first.')
-  process.exit(1)
-}
-
-http
-  .createServer((req, res) => {
-    void api(req, res, async () => {
-      // Static files from dist/; anything else is the app's page.
-      const pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname)
-      let file = path.join(dist, pathname)
-      if (!file.startsWith(dist + path.sep) || !existsSync(file) || (await fs.stat(file)).isDirectory())
-        file = path.join(dist, 'index.html')
-      res.setHeader('Content-Type', TYPES[path.extname(file)] ?? 'application/octet-stream')
-      if (file.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'max-age=31536000, immutable')
-      res.end(await fs.readFile(file))
-    })
+  // Static files from dist/; anything else is the app's page. Hashed assets
+  // under /assets are immutable; everything else revalidates.
+  const statics = yield* HttpStaticServer.make({ root: config.distDir, index: 'index.html', spa: true })
+  const staticsApp = Effect.gen(function* () {
+    const req = yield* HttpServerRequest.HttpServerRequest
+    const res = yield* statics
+    if (!req.url.includes('/assets/')) return res
+    return HttpServerResponse.setHeader(res, 'Cache-Control', 'max-age=31536000, immutable')
   })
-  .listen(port, () => console.log(`floorplan on http://localhost:${port} (data in ${store.root})`))
+  const staticHandler = yield* NodeHttpServer.makeHandler(staticsApp, { scope })
+
+  yield* Effect.acquireRelease(
+    Effect.sync(() => {
+      const s = createServer((req, res) => {
+        const pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname)
+        if (pathname.startsWith('/api/')) api(req, res, () => staticHandler(req, res))
+        else staticHandler(req, res)
+      })
+      if (config.host) s.listen(config.port, config.host)
+      else s.listen(config.port)
+      return s
+    }),
+    (s) => Effect.promise(() => new Promise<void>((close) => s.close(() => close()))),
+  )
+
+  yield* Effect.log(`floorplan on http://localhost:${config.port} (data in ${config.dataDir})`)
+  return yield* Effect.never
+})
+
+NodeRuntime.runMain(
+  program.pipe(
+    Effect.provide(ServicesLive.pipe(Layer.provideMerge(Layer.mergeAll(PlatformLive, ServerConfig.layer)))),
+    Effect.scoped,
+  ),
+)
