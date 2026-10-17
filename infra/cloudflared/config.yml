@@ -1,0 +1,18 @@
+# Locally-managed tunnel — ingress lives here (versioned), not in the
+# Zero Trust dashboard. The connector authenticates with the credentials
+# file, which stays out of git (./.cloudflared/credentials.json).
+#
+# The tunnel id and hostname below are specific to this deployment. A new
+# operator provisions their own with:
+#   cloudflared tunnel login                        # browser auth
+#   cloudflared tunnel create <name>                # -> ~/.cloudflared/<id>.json
+#   cloudflared tunnel route dns <name> <hostname>  # creates the CNAME
+# then updates `tunnel:` and `hostname:` below and copies the credentials
+# file to ./.cloudflared/credentials.json.
+tunnel: 5191b32e-7e35-4144-9a8e-fcfebb620b61
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: floorplans.juancuiule.com
+    service: http://app:8080
+  - service: http_status:404

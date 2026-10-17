@@ -1,0 +1,78 @@
+# json-file's default is unbounded — on an SD card that eventually fills
+# the disk. Rotation keeps the last ~30 MB per service.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+services:
+  # The whole app in one process: the API plus the built SPA, on :8080.
+  # Spaces persist in the floorplans-data volume (FLOORPLAN_DATA).
+  app:
+    build: .
+    volumes:
+      - floorplans-data:/app/data
+    environment:
+      PORT: '8080'
+      FLOORPLAN_DATA: /app/data
+      NODE_ENV: production
+    networks:
+      # Not internal: /api/image proxies remote pictures, so the app needs
+      # egress. Not published to the host — only cloudflared reaches it.
+      tunnel_ingress:
+        ipv4_address: 172.30.80.11
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+    restart: unless-stopped
+    healthcheck:
+      # Any path serves index.html — a sub-500 response proves the server is up.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:8080/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Cloudflare Tunnel: the only way in from the public internet, no
+  # port-forwarding on the router. Locally-managed tunnel — ingress rules
+  # live in infra/cloudflared/config.yml (versioned, not dashboard
+  # clicks); the connector authenticates with ./.cloudflared/credentials.json
+  # (gitignored — copy of ~/.cloudflared/<tunnel-id>.json).
+  cloudflared:
+    # Pinned to the version this deployment was verified on — upgrades are
+    # deliberate, not whatever latest happens to be on pull.
+    image: cloudflare/cloudflared:2026.9.3
+    command: tunnel --no-autoupdate run
+    volumes:
+      - ./infra/cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./.cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
+    networks:
+      tunnel_ingress:
+        ipv4_address: 172.30.80.10
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  tunnel_ingress:
+    ipam:
+      config:
+        - subnet: 172.30.80.8/29
+
+volumes:
+  floorplans-data:

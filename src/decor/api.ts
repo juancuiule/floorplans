@@ -45,8 +45,8 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError('The server is not answering')
   }
-  const body = (await res.json().catch(() => ({}))) as T & { error?: string }
-  if (!res.ok) throw new ApiError(body.error ?? `Request failed (${res.status})`)
+  const body = (await res.json().catch(() => ({}))) as T & { message?: string; error?: string }
+  if (!res.ok) throw new ApiError(body.message ?? body.error ?? `Request failed (${res.status})`)
   return body
 }
 
@@ -114,7 +114,11 @@ export async function listArtwork(): Promise<LibraryImage[] | null> {
 }
 
 export const uploadArtwork = (file: File) =>
-  call<LibraryImage>(`${spaceBase()}/artwork?name=${encodeURIComponent(file.name)}`, { method: 'POST', body: file })
+  call<LibraryImage>(`${spaceBase()}/artwork?name=${encodeURIComponent(file.name)}`, {
+    method: 'POST',
+    body: file,
+    headers: { 'Content-Type': 'application/octet-stream' },
+  })
 
 /** Where the page loads a picture from: local paths as they are, other links through the dev server (no CORS). */
 export function screenImageSrc(link: string): string | null {
@@ -173,4 +177,5 @@ export const uploadReference = (space: string, file: File) =>
   call<LibraryImage>(`${spaceBase(space)}/references?name=${encodeURIComponent(file.name)}`, {
     method: 'POST',
     body: file,
+    headers: { 'Content-Type': 'application/octet-stream' },
   })

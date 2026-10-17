@@ -6,7 +6,10 @@
 // FLOORPLAN_DATA picks the data folder (default storage/), like the servers.
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { SpaceStore } from '../server/storage.ts'
+import { NodeFileSystem, NodePath } from '@effect/platform-node'
+import { Layer, ManagedRuntime } from 'effect'
+import { ServerConfig } from '../server/config.ts'
+import { Spaces } from '../server/storage.ts'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -17,8 +20,20 @@ if (positionals.length !== 1) {
   process.exit(1)
 }
 const root = process.cwd()
-const store = new SpaceStore(path.resolve(root, process.env.FLOORPLAN_DATA ?? 'storage'), path.join(root, 'examples'))
-const id = await store.importWorkspace(path.resolve(positionals[0]), { id: values.id, name: values.name })
-const { plans } = await store.space(id)
+const rt = ManagedRuntime.make(
+  Layer.mergeAll(
+    NodeFileSystem.layer,
+    NodePath.layer,
+    ServerConfig.layerFromValues({
+      dataDir: process.env.FLOORPLAN_DATA ?? path.join(root, 'storage'),
+      templatesDir: path.join(root, 'examples'),
+    }),
+  ),
+)
+const spaces = rt.runSync(Spaces)
+const id = await rt.runPromise(
+  spaces.importWorkspace(path.resolve(positionals[0]), { id: values.id, name: values.name }),
+)
+const { plans } = await rt.runPromise(spaces.space(id))
 console.log(`Space ${id}: ${plans.map((p) => p.id).join(', ')}`)
 console.log(`Open http://localhost:5173/?space=${id}`)

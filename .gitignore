@@ -45,3 +45,9 @@ storage
 
 # The browser tests' throwaway data folder
 tests/e2e/.data
+
+# Compose secrets (CLOUDFLARE_TUNNEL_TOKEN)
+.env
+
+# Cloudflare Tunnel credentials (copy of ~/.cloudflared/<tunnel-id>.json)
+.cloudflared

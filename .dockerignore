@@ -1,0 +1,12 @@
+.git
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.cloudflared
+storage
+test-results
+tests/e2e/.data
+docs
+*.tsbuildinfo
